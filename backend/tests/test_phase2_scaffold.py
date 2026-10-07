@@ -99,15 +99,18 @@ def test_actions_require_complete_optional_attribution():
         adapter.validate_python({**body, "type": "purchase"})
 
 
-def test_pending_api_never_claims_success():
+def test_event_api_maps_invalid_attribution_to_validation_error():
+    from app.logging.service import InvalidAttribution
+
+    class RejectingIngestor:
+        def ingest(self, *args):
+            raise InvalidAttribution()
+
     with scaffold_client() as client:
-        feed = client.get("/api/feed")
-        event = client.post("/api/events", json=view_payload())
-    for response, exercise in [(feed, "phase2-feed"), (event, "phase2-events")]:
-        assert response.status_code == 503
-        assert response.json()["exercise"] == exercise
-        assert response.json()["request_id"] == response.headers["X-Request-ID"]
-        assert response.headers["Cache-Control"] == "no-store"
+        client.app.state.event_ingestor = RejectingIngestor()
+        response = client.post("/api/events", json=view_payload())
+    assert response.status_code == 422
+    assert response.headers["Cache-Control"] == "no-store"
 
 
 def test_new_routes_reject_simulation_overrides_and_cross_origin_mutations():

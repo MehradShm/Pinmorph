@@ -1,6 +1,5 @@
 """Executable learning targets. Opt in once implementing the marked core functions."""
 
-import os
 from datetime import UTC, datetime
 
 import pytest
@@ -11,12 +10,7 @@ from app.feed.contracts import Candidate, FeedContext
 from app.ml.baselines import PopularityRanker, RecencyRanker
 from app.models import Pin
 
-pytestmark = [
-    pytest.mark.phase2_exercise,
-    pytest.mark.skipif(
-        os.getenv("RUN_PHASE2_EXERCISES") != "1", reason="Learning core remains a marked exercise"
-    ),
-]
+pytestmark = pytest.mark.phase2_exercise
 
 
 @pytest.mark.parametrize(

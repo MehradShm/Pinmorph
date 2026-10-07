@@ -91,3 +91,17 @@ nav { flex-wrap: wrap; }
 .board-tools { padding: 20px; background: #eee8df66; border-radius: 16px; }
 @media (max-width: 1200px) { .header { flex-wrap: wrap; } nav { order: 3; width: 100%; } }
 @media (max-width: 650px) { nav { gap: 0; } nav button { padding: 9px 10px; } .search-form label { min-width: 140px; } }
+.extension-panel { max-width: 640px; margin-bottom: 2rem; }
+.extension-panel fieldset { border: 1px solid #ded8d0; border-radius: 12px; padding: 1rem; }
+.interest-options { display: flex; flex-wrap: wrap; gap: 1rem; }
+.crop-preview { position: relative; width: min(100%, 360px); }
+.crop-preview img { display: block; width: 100%; height: auto; }
+.crop-outline { position: absolute; border: 3px solid #e75445; pointer-events: none; box-sizing: border-box; }
+.crop-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; }
+.pin-actions { margin-top: 1.5rem; }
+.comment { border-bottom: 1px solid #eee; padding: .5rem 0; overflow-wrap: anywhere; }
+.related-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+.related-grid img { width: 100%; height: 130px; object-fit: cover; border-radius: 12px; }
+.onboarding-banner { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .75rem 1rem; background: #f6efe8; border-radius: 12px; }
+.moderation-row { padding: 1rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 16px; overflow-wrap: anywhere; }
+@media (max-width: 650px) { .crop-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

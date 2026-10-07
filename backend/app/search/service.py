@@ -85,7 +85,15 @@ def decode_cursor(value: str, query: SearchQuery) -> tuple[datetime, str]:
 
 
 def eligible(query: SearchQuery, viewer: User | None, as_of: datetime):
+    from app.product.models import HiddenPin
+
+    hidden = (
+        select(HiddenPin.pin_id).where(HiddenPin.user_id == viewer.id)
+        if viewer
+        else select(HiddenPin.pin_id).where(False)
+    )
     statement = select(Pin).where(
+        Pin.id.not_in(hidden),
         Pin.status == "ready",
         Pin.available_at <= as_of,
         visible_owner(Pin.owner_id, viewer, include_muted=True),

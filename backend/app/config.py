@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     health_timeout_seconds: float = Field(default=2.0, gt=0, le=10)
     upload_max_bytes: int = 12 * 1024 * 1024
     image_max_pixels: int = 24_000_000
+    lens_endpoint: str = "http://127.0.0.1:8090"
+    smtp_host: str = "127.0.0.1"
+    smtp_port: int = 1025
     session_days: int = 7
     cookie_secure: bool = False  # Enable when serving over HTTPS.
     trusted_origins: list[str] = [

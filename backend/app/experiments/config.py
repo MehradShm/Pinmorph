@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
 
 
 class Arm(BaseModel):
@@ -33,4 +33,5 @@ class FeedConfig(BaseModel):
     candidate_source: str = "candidate:catalog:v1"
     reranker: str = "reranker:identity:v1"
     feature_schema_version: str = "features:baseline:v1"
+    interest_boost: FiniteFloat = Field(default=24, ge=0, le=1000)
     experiment: Experiment = Field(default_factory=Experiment)

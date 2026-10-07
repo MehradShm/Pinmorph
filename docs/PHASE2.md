@@ -1,5 +1,9 @@
 # Phase 2: baseline feed and logging
 
+> This guide describes the preserved Phase 2 scaffold checkpoint. The shared serving,
+> assignment, baseline ranking and event cores are implemented in the current Phase 4
+> code. See PHASE4.md and PHASE4_WALKTHROUGH.md for current behavior and validation.
+
 Status: **started; storage/API/interface scaffold implemented, learning core pending.**
 The existing Phase 1 UI continues using `/api/pins`. It does not yet use the new feed,
 emit impressions, or log actions. No Phase 2 completion tag is created until acceptance.

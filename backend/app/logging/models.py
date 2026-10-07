@@ -1,4 +1,4 @@
-"""Schema scaffolding: constraints support, but do not replace, ingestion validation."""
+"""Serving/event records: constraints support, but do not replace, ingestion validation."""
 
 from datetime import datetime
 

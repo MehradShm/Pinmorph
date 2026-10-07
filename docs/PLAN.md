@@ -230,9 +230,11 @@ Neither requires proving what real users would prefer.
   related pins, interest onboarding, profile/board extras, URL import, thin engagement,
   notifications, and safety. Lens remains a deep learning module; add its crop-search
   baseline and ANN evaluation as its own checkpoint. Build these modules independently.
-  Current status: first keyword search/profile/social/secret-board/section/in-app activity
-  modules implemented; Following, related and Lens core remain exercises. Onboarding, URL
-  import, other engagement, email and moderation work remain pending. See PHASE4.md.
+  Current status: implementation complete, including shared serving/events, Following,
+  public related pins, pinned image-only CLIP crop retrieval, onboarding/settings, URL image
+  import, comments/reactions/share/hide/report, local SMTP digests and moderation/classifier/
+  duplicate gates. Exact/HNSW agreement and latency are recorded in docs/reports/phase4-lens.json.
+  See PHASE4.md and PHASE4_WALKTHROUGH.md. Explain-back discussion remains open.
 - **Phase 5, thin monetization:** business-account features, product data, shop filter,
   placeholder ad slots, and analytics rollups. A full ad-serving system remains separate.
 
@@ -244,15 +246,15 @@ the core ML logic the developer intends to learn.
 
 | Checkpoint | Baseline or invariant | Explain-back outcome |
 |---|---|---|
-| Logging and labels | A small known request/view/action fixture, including retries and unseen items | Pending: Phase 2 scaffold and opt-in targets are ready; explain attribution, idempotency, and when an example becomes a negative after implementing the core |
+| Logging and labels | A small known request/view/action fixture, including retries and unseen items | Implemented and validated with concurrent retry/out-of-order fixtures; explain-back questions are in PHASE4_WALKTHROUGH.md, discussion pending |
 | Embeddings and retrieval | Popularity/recency; exact similarity on a small subset to check ANN recall | Pending: Phase 3A contracts/storage and toy targets are ready; explain user history cutoff, cold start, and accuracy versus latency after core implementation |
 | Engagement ranker | Unranked candidate blend or similarity ordering, evaluated on the same candidates | Pending: manifest/JSON artifact schema and scoring targets are ready; explain sampling, point-in-time features, and ranking versus CTR after fitting |
 | Reranker | Same ranked list without reranking | Pending: duplicate/creator-cap skeleton and target are ready; explain diversity and relevance tradeoffs after implementation |
 | MIND CTR | Training-period constant click-rate predictor | Pending: Phase 3B reader/contracts/artifact tools and toy targets are ready; explain label source, group splitting, log loss/calibration after fitting and a real-data comparison |
 | Model selection and rollout | Pinned version and deterministic experiment assignment | Trace which model served an item and demonstrate a configuration rollback |
 | Operational exercise | Known steady workload and explicitly expected failure/recovery behavior | Pending: diagnostics, disposable baseline setup/export and exercise worksheet are ready; minimum run adapter/reset and measured workloads are still required before diagnosis/recovery acceptance |
-| Following and related discovery | Deterministic visible social union; public co-board counts versus similarity on fixed candidates | Pending: Phase 4 interfaces are ready; implement serving/time/privacy acceptance and explain fan-out and secret-board exclusion |
-| Lens crop retrieval | Exact cosine retrieval on the same eligible versioned corpus | Pending: crop preparation and known-answer targets work; inference, exact/ANN comparison, latency report and explain-back remain |
+| Following and related discovery | Deterministic visible social union; public co-board counts versus similarity on fixed candidates | Implemented and validated social union/public-board/privacy fixtures; similarity fallback uses the pinned Lens recipe. Explain-back discussion pending |
+| Lens crop retrieval | Exact cosine retrieval on the same eligible versioned corpus | Implemented pinned image-only CLIP and exact/HNSW comparison: mean top-10 overlap 1.0 on 16 crops / 32 demo pins; exact computation faster. Relevance/scale and explain-back discussion remain |
 
 ## 8. Revisit experiments backlog
 

@@ -272,10 +272,10 @@ def test_new_controls_enforce_auth_origin_and_explicit_pending_discovery(clients
         == 403
     )
     assert public.get("/api/feed/following").status_code == 401
-    pending = owner.get("/api/feed/following")
-    assert pending.status_code == 503 and pending.json()["exercise"] == "phase4-following"
+    page = owner.get("/api/feed/following")
+    assert page.status_code == 200 and page.json()["items"] == []
     pin_id = ready_pin(owner, "Context pin")
-    assert owner.get(f"/api/pins/{pin_id}/related").json()["exercise"] == "phase4-related"
+    assert owner.get(f"/api/pins/{pin_id}/related").status_code == 200
     assert (
         owner.post("/api/lens", files={"image": ("bad.png", b"bad", "image/png")}).status_code
         == 422
@@ -285,4 +285,4 @@ def test_new_controls_enforce_auth_origin_and_explicit_pending_discovery(clients
         data={"crop_box": '{"right": 0.5}'},
         files={"image": ("crop.png", png_bytes(), "image/png")},
     )
-    assert valid.status_code == 503 and valid.json()["exercise"] == "phase4-lens-serving"
+    assert valid.status_code == 200 and valid.json()["request_id"]

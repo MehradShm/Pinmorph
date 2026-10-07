@@ -9,9 +9,12 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Integer,
     String,
     UniqueConstraint,
+    and_,
+    cast,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -55,3 +58,16 @@ class PinEmbedding(Base):
     # Unbounded type permits new dimensions; ANN indexes must be per model/version/dimension.
     embedding: Mapped[list[float]] = mapped_column(VECTOR())
     known_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+# The shipped image-only recipe has one schema-managed fixed-dimension partial index.
+Index(
+    "ix_lens_clip_hnsw",
+    cast(PinEmbedding.embedding, VECTOR(512)).label("embedding"),
+    postgresql_using="hnsw",
+    postgresql_ops={"embedding": "vector_cosine_ops"},
+    postgresql_where=and_(
+        PinEmbedding.embedder_version == "embedder:clip-image-crop:v1",
+        PinEmbedding.dimension == 512,
+    ),
+)

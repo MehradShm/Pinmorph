@@ -199,7 +199,6 @@ def test_served_position_is_unique(serving_records):
 
 
 @pytest.mark.phase2_exercise
-@pytest.mark.skipif(os.getenv("RUN_PHASE2_EXERCISES") != "1", reason="Learning core exercise")
 class TestEventLearningTargets:
     def test_retries_and_a_second_view_id_do_not_inflate_views(self, serving_records):
         db, user, _, request, pins = serving_records
@@ -280,7 +279,6 @@ class TestEventLearningTargets:
 
 
 @pytest.mark.phase2_exercise
-@pytest.mark.skipif(os.getenv("RUN_PHASE2_EXERCISES") != "1", reason="Learning core exercise")
 class TestCandidateLearningTargets:
     def test_time_cutoffs_and_proxy_provenance(self, serving_records):
         db, user, other, request, pins = serving_records

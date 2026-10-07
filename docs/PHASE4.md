@@ -1,177 +1,224 @@
-# Phase 4: first product extensions and discovery exercises
+# Phase 4: product extensions and visual discovery
 
-Status: **started; keyword search and the first social/board modules are implemented.**
-This is the first independent Phase 4 milestone, not completion of the entire phase.
-Following/related/Lens learning algorithms and the remaining product extensions are pending.
-Phase 2/3A/3B acceptance remains pending; moving branches does not complete those phases.
+Phase 4 is implemented. This checkpoint finishes Following and related discovery, CLIP
+crop search, onboarding, image URL import, engagement, local email digests and moderation,
+in addition to the search/social/board modules from the earlier Phase 4 checkpoint.
+The shared Phase 2 serving, assignment, baseline ranking and event ingestion code was also
+completed because these surfaces require it. Separate Phase 3A model training and Phase 3B
+CTR exercises are still separate tracks; this checkpoint does not claim they are finished.
 
-## What works
+## Modules and goals
 
-| Module | Implementation | Purpose |
-|---|---|---|
-| Keyword search | `app/search/service.py`, `api.py`, `SearchBar.tsx` | PostgreSQL English full-text matching of title/description, recency/ID pagination, title suggestions and filters |
-| Public profiles | `app/social/api.py`, `schemas.py`, `Social.tsx` | Display name/bio, profile editing, name lookup, followers/following and public board browsing without exposing account credentials |
-| Social relationships | `app/social/models.py`, `api.py` | User/board follows, retries, blocking, muting and removal of cross-user relationships when blocked |
-| Visibility policy | `app/social/policy.py`, reused by existing product reads | Prevent signed-in blocked users from seeing each other's profiles, board membership, pins and media; suppress muted creators in catalog/search |
-| Board publication | `app/boards/api.py`, `BoardTools.tsx`, existing board routes | Explicit public/secret choice, read public boards, revoke board follows when made secret |
-| Board sections | `BoardSection`, `Save.section_id`, board routes/UI | Organize saved pins, filter by section, move back to the board when a section is deleted |
-| In-app activity | `Notification`, social routes, `Activity` in `Social.tsx` | Notify the followed user/board owner once per newly created relationship and acknowledge read state |
-| Lens input preparation | `app/discovery/crop.py` | Validate upload/crop, apply EXIF orientation, crop in normalized coordinates, flatten transparency, remove metadata and hash transient RGB pixels |
-| Learning boundaries | `app/ml/discovery.py`, `app/discovery/{config,service,api}.py` | Typed Following/related/crop-embedding/Lens/evaluation interfaces, versioned registries/config and five pending exercise groups |
-| Prerequisite inventory | `scripts/phase4_preflight.py` | Inventory pending exercises and remaining modules; static reporting, not a completion or quality certificate |
-
-All paths starting `app/` are under `backend/`. Frontend files are under `frontend/src/`.
-Migration `d12ac1433a55` extends the existing schema; no new third-party dependency is needed.
+| Module | Main code | Purpose |
+| --- | --- | --- |
+| Home serving and attribution | `app/feed/{service,persistence}.py`, `app/logging/service.py` | Rank eligible pins, record immutable served features, accept retry-safe views and actions |
+| Text search | `app/search/` | PostgreSQL full-text search, typeahead and filter-bound pagination; authenticated result lists use the common attribution writer |
+| Following | `app/ml/discovery.py` | Merge followed creators and followed public boards; keep all contributing sources and exclude secret boards, future records, blocks, mutes and hidden pins |
+| Related pins | `app/ml/discovery.py` | Rank by distinct shared public boards; use same-recipe image similarity when eligible co-board evidence is absent |
+| Lens | `app/discovery/`, `app/ml/{discovery,retrieval,vector_store}.py`, `infra/lens/` | Prepare an oriented crop, encode it with pinned CLIP, search compatible vectors and record attributed results |
+| Onboarding/settings | `app/product/{models,api}.py`, `frontend/src/Extensions.tsx` | Persist optional interests, completion state and email opt-in; add an explicit keyword-match ranking boost |
+| Profiles and boards | `app/social/`, `app/boards/` | Public profile board/created-pin tabs, names/bios, user/board follows, blocks/mutes, secret boards and sections |
+| URL import | `app/product/url_import.py` | Fetch a bounded public direct-image URL, then use the same upload/worker pipeline |
+| Thin engagement | `app/product/api.py`, `frontend/src/PinActions.tsx` | Comments, one like per user/pin, shareable links, hide/unhide and reports |
+| Activity and email | `app/social/`, `app/product/digests.py` | In-app follows/saves/comments/likes; opt-in daily outbox delivery to a local SMTP sink |
+| Safety | `app/product/safety.py`, `app/media.py`, moderation endpoints | Exact oriented-pixel duplicates, a versioned zero-shot upload hold policy, private quarantine and operator review |
 
 ```mermaid
 flowchart TD
-    UI[React product screens] --> Search[Search backend]
-    UI --> Social[Profile, relationship and board APIs]
-    Search --> Policy[Shared visibility and availability policy]
-    Social --> Policy
-    Policy --> DB[PostgreSQL]
-    Social --> Notices[Transactional follow notifications]
-    Notices --> Activity[In-app activity]
-    Boundary[Following, related and Lens boundaries] --> Registry[Versioned config and registries]
-    Registry --> Core[Pending learning algorithms]
-    Core -. future integration .-> Serving[Shared Phase 2 serving and event attribution]
+  Upload[Upload or public image URL] --> Validate[Image validation and pixel duplicate gate]
+  Validate --> Media[Redis / RQ media worker]
+  Media --> Safety[CLIP upload classifier]
+  Safety --> Hold[Private quarantine and moderation queue]
+  Safety --> Ready[Ready pin and image embedding]
+  Ready --> Candidates[Home / Following / related / Lens candidates]
+  Interests[Saved interests] --> Candidates
+  Crop[Transient oriented image crop] --> Encoder[Local pinned CLIP CPU encoder]
+  Encoder --> Retrieval[Exact reference or pgvector HNSW]
+  Retrieval --> Candidates
+  Candidates --> Writer[Common atomic serving writer]
+  Writer --> UI[Returned pins with request and position]
+  UI --> Views[50 percent visible for 1000 ms]
+  UI --> Actions[Closeup / save / outbound click]
+  Views --> Ledger[Idempotent event ledger and reconciliation]
+  Actions --> Ledger
+  Social[Follow / save / comment / like] --> Activity[In-app notifications]
+  Activity --> Outbox[Daily opt-in email outbox]
+  Outbox --> Mailpit[Local Mailpit SMTP inbox]
 ```
 
-## How to try it
+## Running and trying the result
 
 ```bash
-docker compose up --build -d --wait
+make up                  # explicitly prepares verified local weights before starting
+make lens-backfill       # index an existing ready catalog; new uploads index automatically
+make lens-evaluate       # write a real exact/HNSW crop comparison
 make check
 make integration
-make web-check
 make browser-check
 make phase4-preflight
 ```
 
-Open http://localhost:8080. Search by keyword and collection. Create a board, save pins,
-add a section and move a saved pin into it. A board starts secret; use **Make public** to
-publish its membership. Open **My profile** to edit the name/bio. **People** looks up names
-and opens profiles and public boards. Signed-in users can follow/mute/block another user,
-follow their public board, and inspect **Activity**. Activity includes unblock/unmute controls.
-The closeup's **View creator** opens a profile. The original upload/save/browse loop remains.
+The app is at `http://localhost:8080`; API readiness is at
+`http://localhost:8000/health/ready`. Mailpit is at `http://localhost:8025` with local SMTP
+on port 1025. The CLIP service is bound to localhost port 8090. Weights live under ignored
+`data/models/`; they are not in Git. `scripts.prepare_lens` verifies the published SHA-256
+and neither request handlers nor the encoder download weights implicitly.
 
-## API boundaries
+Sign up, choose interests from the onboarding banner or Settings, follow a creator or a
+public board, and open Following. Open a ready pin to comment, like, share, save, hide or
+report it. Lens accepts an image and normalized left/top/right/bottom coordinates with a
+live crop outline. Uploaded pins appear in Uploads while processing, awaiting review or
+removed. Settings can restore hidden pins and opt into daily activity email. Activity shows
+notifications and email delivery state.
 
-| API | Behavior |
-|---|---|
-| `GET /api/search/pins` | `q`, owner ID, provenance, aware created-after/before dates, limit and cursor |
-| `GET /api/search/suggest` | Prefix on the last ASCII token, matching titles, same eligibility/filters |
-| `GET /api/profiles` | Name substring lookup with ID pagination |
-| `GET /api/profiles/{id}` | Public fields and social counts; no email/hash/source key |
-| `PATCH /api/profiles/me` | Replace current user's display name and bio |
-| `GET /api/profiles/{id}/connections/{followers\|following}` | Paginated visible profile list |
-| `GET /api/profiles/{id}/boards`, `/pins` | Public boards/ready creations; owners can also list their own secret boards |
-| `PUT/DELETE /api/social/users/{id}/{follow\|block\|mute}` | Idempotent relationship mutation with authentication and Origin check |
-| `PUT/DELETE /api/social/boards/{id}/follow` | Follow visible public boards/unfollow |
-| `GET /api/social/preferences` | Current user's blocked/muted people (first 100 of each in this first milestone) |
-| `GET /api/boards/{id}` | Authorized board details |
-| `PUT /api/boards/{id}` | Owner replaces name and publication setting; making secret deletes existing board follows |
-| `GET/POST /api/boards/{id}/sections` | Visible list / owner creates a named section |
-| `DELETE /api/boards/{id}/sections/{section}` | Owner deletes section; saved pins remain |
-| `PUT /api/boards/{id}/pins/{pin}/section` | Owner assigns a saved pin to a same-board section, or clears with null |
-| `GET /api/boards/{id}/pins?section_id=...` | Authorized saved-pin page, optionally filtered by section |
-| `GET /api/notifications` | Current recipient's recent-first activity with timestamp/ID pagination |
-| `PUT /api/notifications/{id}/read` | Recipient-only, repeatable read acknowledgment |
-| `GET /api/feed/following`, `/api/pins/{id}/related` | Authenticated boundaries; currently explicit Phase 4 pending 503 |
-| `POST /api/lens` | Authenticated image and crop validation; valid inputs reach the explicit pending Lens service |
-
-The UI exposes query/collection search filters; owner/date filters are currently API-only.
-For local H&M imports, provenance is `hm`, not `hm_import`. Search returns a request ID
-and backend version. The search backend implements a small protocol and is set on app state.
-This first catalog search is deterministic recency ordering of keyword matches, not learned
-relevance. GIN indexes the stored generated search document, including already-existing pins.
-Pagination is bound to the normalized query and all filters; changing filters with an old
-cursor returns 422. Newly added matches do not cause duplicates on subsequent keyset pages.
-The last-token prefix suggestion is a bounded catalog lookup, not a query-log popularity model.
-
-## Privacy, concurrency and data meaning
-
-Existing owner-only boards become secret during migration. Publishing never happens just
-because a new column was added. A secret board hides its name, membership and sections from
-other users. **It does not make uploaded pins private:** pins already belong to the public
-catalog. Deleting a section keeps its saves and clears their section; a composite foreign key
-enforces same-board membership. That constraint is deferred until commit so the separate
-section foreign key can apply `SET NULL` on deletion. Invalid final membership still fails.
-
-Blocks apply in both directions for authenticated reads and remove user/board follows and
-cross-user notifications. Anonymous public browsing has no signed-in identity against which
-to enforce a block; this is relationship control, not confidential pin access. Mutes suppress
-catalog/search discovery and activity, but do not deny direct profile/pin/board access.
-Media now uses private/no-store caching so authenticated block decisions are checked again.
-Later ML sources must reuse the same policy; they are not implemented by this module.
-
-Follow/block operations lock both user rows in ID order; concurrent follows cannot add a
-second relationship or duplicate its notification. Board follows also lock and re-read the
-board before checking current privacy. Owner publication writes lock the board and revoke
-follows transactionally when it becomes secret. An unfollow then later follow is a new
-transition and may legitimately notify again. Notification delivery is transactional in-app
-fan-out on write; external email, delivery queues and digest scheduling are not implemented.
-
-These product records are **not Phase 2 engagements**. Search results currently have request
-and backend attribution only; they are not persisted served-items, do not create impressions,
-and cannot yet support request-linked ML view events. Shared Phase 2 serving/event work is
-still required. Existing simulator capability declarations remain diagnostics-only and
-`ready_for_traffic=false`; no run adapter/reset or simulator engine is added here.
-
-## Learning modules and acceptance
-
-The existing WORKING_AGREEMENT keeps core recommendation/embedding logic as exercises.
-`Settings.discovery_config` resolves named Following, related, crop encoder and Lens
-implementations from typed registries at startup. Unknown versions fail before serving;
-register another protocol implementation and select its version for an experiment. Supply
-`DISCOVERY_CONFIG` as JSON for environment-based selection. The Lens service receives its
-selected crop encoder; selection itself performs no inference. Actual runtime/weight recipes,
-attributed serving and model rollout remain core acceptance work. Simulator baseline/reset
-must incorporate these configuration versions before advertising those future controls.
-
-1. `phase4-following`: fan-out on read from followed creators and public boards, deduplicate,
-   preserve sources, apply time/privacy policy, build scoring features and use shared serving.
-   Alternative/revisit: precomputed fan-out on write and invalidation after privacy changes.
-2. `phase4-related`: count shared public boards, then explicit same-version similarity
-   fallback. Compare with similarity alone on fixed eligible candidates. Exclude secret board
-   information and the context pin. Alternative/revisit: graph walks or learned similarity.
-3. `phase4-lens-embedding`: pinned image-only CLIP crop inference. Declare compatibility with
-   the catalog's image/title recipe; the two recipes can change retrieval quality. No implicit
-   runtime/weight download. Alternative/revisit: proposed object crops and product-only index.
-4. `phase4-lens-serving`: filter available/known, same-version catalog vectors, compare exact
-   and ANN retrieval, integrate candidate privacy and shared served-item persistence. Bind
-   response/cursor to crop and versions. Alternative/revisit: index types and recall/latency.
-5. `phase4-lens-evaluation`: exact/ANN top-k overlap, eligible corpus, cold/partial crops and
-   measured elapsed latency. Overlap is agreement with a reference, not real-user relevance.
-   Require a reproducible real-catalog report, not only passing toy-vector targets.
+Moderator rights are a local operator action, never a registration field:
 
 ```bash
-make phase4-exercises
+uv run --locked python -m scripts.moderator your-local-account@example.test
+# Reload the app, open Moderation, inspect an image, then remove / restore / dismiss.
+uv run --locked python -m scripts.moderator your-local-account@example.test --revoke
 ```
 
-The six opt-in Lens checks are known-answer targets and currently fail at the named TODOs.
-Normal checks skip them. Five TODO groups cover more work than those six targets: Following
-and related integration/privacy/time acceptance, real inference, serving attribution and
-ANN reporting require additional acceptance tests as the core is implemented. Ordinary
-green checks establish product/scaffold behavior only. `--fail-on-pending` exits 2.
+Ordinary accounts cannot read the moderation queue or its private image route. Reviews
+are recorded with reviewer, time and action. Repeating the same decision is idempotent;
+a different decision on an already reviewed report returns 409. A new review can reconsider
+a removal. Restoring requires completed media variants. Dismissing a report closes the
+report; it does not publish a quarantined image.
 
-Explain-back outcomes are pending:
+## API additions
 
-- Why does a secret board not make its uploaded pins private? How does making a board
-  secret affect existing followers and cached responses?
-- How do ordered locks prevent follow/block races? When should a repeat follow notify again?
-- What does exact/ANN overlap establish, and what remains untested about image-title fusion
-  and crop relevance? Which versions and timestamps must match before comparing results?
+| Route | Behavior |
+| --- | --- |
+| `GET /api/feed` | Authenticated home FeedPage with stable arm assignment and persisted feature snapshots |
+| `POST /api/events` | Authenticated impression/engagement ingestion; same ID/payload is duplicate, conflicting reuse is 409 |
+| `GET /api/feed/following` | Authenticated, cursor-bound Following FeedPage |
+| `GET /api/pins/{id}/related` | Eligible public co-board neighbors or image-similarity fallback |
+| `POST /api/lens` | Multipart image, crop_box JSON, limit and optional cursor; attributed visual matches |
+| `GET/PUT /api/settings` | Interest onboarding and email digest preference |
+| `GET /api/settings/hidden` | The first 100 hidden pins for the current account |
+| `POST /api/pins/import` | Title, description, public direct-image URL; async upload pipeline |
+| `GET/POST /api/pins/{id}/comments`, `DELETE /api/comments/{id}` | Paginated comments; delete own comments or moderator removal |
+| `GET/PUT/DELETE /api/pins/{id}/reaction` | Visible counts and idempotent per-user like |
+| `PUT/DELETE /api/pins/{id}/hide` | Hide from discovery or show again; board membership remains |
+| `POST /api/pins/{id}/report` | One user report per pin, preserved on retries |
+| `GET /api/moderation/reports`, `PUT /api/moderation/reports/{id}` | Moderator-only queue and decisions |
+| `GET /api/moderation/pins/{id}/image` | Moderator-only processed image, including quarantined/removed pins |
+| `POST /api/notifications/digest`, `GET /api/notifications/digests` | Request own digest and inspect own delivery state |
 
-## Remaining Phase 4 scope
+Search retains its PinPage-compatible shape and adds `attributed`; authenticated search
+records the list without creating a view. Anonymous catalog/search browsing and typeahead
+do not create recommendation events. A direct authenticated closeup can be unattributed.
+The UI attaches the originating request/position to recommendation and related-pin actions.
 
-Interest onboarding and its ranking integration, URL import, comments/reactions/hide/report,
-email digest, moderation queue, classifier/duplicate gate and richer profile/settings remain.
-The first product modules can be tested now; recommendation-serving acceptance requires the
-unfinished Phase 2 core and Phase 3A features/models. Phase 3B's CTR and simulator adapter/reset
-remain independent pending tracks. No Phase 4 completion tag, trained crop model, Lens results,
-Following feed, related grid or offline quality improvement is claimed.
+## Core behavior and boundaries
 
-Validation results are recorded in PROGRESS.md. Code is on `phase-4`; `phase-3b-scaffold`
-preserves the prior tooling checkpoint. Git history does not restore database/object state;
-run earlier versions with isolated stores as described in MILESTONES.md.
+Serving follows assign → retrieve → deduplicate → rank → rerank → page → persist. Each
+page has a new request ID and positions restart at zero. Request, item and feature records
+commit together. Returning a result never inserts an impression. The browser creates one
+view after continuous 50% visibility for 1000 ms, cancels the timer when hidden and retries
+with the same event ID. Global receipt IDs and request row locks handle concurrent retries,
+second view IDs and engagements that arrive before views. Ordinary event time is server
+receipt time; client time is diagnostic. Telemetry never mutates boards.
+
+Features count prior known save telemetry and imported purchases separately, deduplicated
+by user/pin with occurrence and receipt strictly before the feature cutoff. Mutable board
+membership is used for current social discovery, not historical ML save counts. Source
+records, ready state, availability, known time, blocks/mutes and hidden pins gate candidates.
+Secret-board membership never supplies related/Following evidence. Pins themselves remain
+public when ready; secret boards protect their membership, not the uploaded pin.
+
+Interest onboarding is optional. The first baseline matches declared interest words in
+pin titles/descriptions, snapshots `interest_matches`, and adds
+`matches * FEED_CONFIG.interest_boost` to the selected baseline score (default 24).
+This is a transparent cold-start experiment, not a learned preference model. It deliberately
+uses no guessed user interests. An empty selection or a zero boost leaves baseline order.
+
+Recommendation cursors bind user, surface, component versions, config version, arm and
+relevant context (interests, context pin or crop hash/policy/pool). Search cursors bind search
+words and filters. Lists refresh current candidates/features between pages; concurrent
+catalog or social activity can move items. Frozen serving sessions are a future experiment.
+Exact-pixel duplicates are suppressed in ranked surfaces; the highest-ranked item wins.
+Same-owner repeated uploads return 409 before queueing, including a DB uniqueness guard for
+races. Across owners the upload is allowed and discovery suppresses duplicate pixels.
+
+## Lens and its measured baseline
+
+The encoder runs OpenAI CLIP ViT-B/32 on CPU, using source revision
+`d05afc436d78f1c48dc0dbf8e5980a9d471f35f6`, verified weights SHA-256
+`40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af`, bicubic resize,
+224px center crop and the checkpoint's RGB normalization. The vendored source carries its
+MIT license. `eval()` and inference mode disable training behavior, and outputs are unit
+normalized. The crop and catalog use the same **image-only** recipe
+`embedder:clip-image-crop:v1`; Phase 3A's image/title fusion is a different experiment.
+See the [original CLIP implementation](https://github.com/openai/CLIP) and the
+[pgvector documentation](https://github.com/pgvector/pgvector) for the upstream operations.
+
+Crop preparation applies EXIF orientation before normalized coordinates, flattens alpha
+onto white, strips metadata and hashes transient RGB PNG pixels. Query images are never
+stored in object storage. Only the crop hash/policy is persisted in serving context.
+Catalog vectors record model recipe, dimension, weight hash, content hash and known time;
+retrieval selects the latest eligible content revision. Vectors from different recipes
+never enter the same comparison. The shipped recipe has a schema-managed partial HNSW
+cosine index on `embedding::vector(512)`. Its explicit DDL is tested because Alembic does
+not reliably round-trip that cast/operator-class expression.
+
+`docs/reports/phase4-lens.json` records the real 32-item demo corpus, its fingerprint,
+16 whole/cropped queries, top-10 IDs, overlap, measured elapsed latency and index plan.
+The run produced mean top-10 overlap **1.0**, median exact computation **9.98 ms**, median
+ANN SQL call **24.24 ms**, and median image encoding **276.75 ms**. Exact timing excludes
+vector loading; ANN timing includes SQL round trips. The experiment explicitly disables sequential scans and sorts to force the
+indexed plan on this tiny corpus. This establishes agreement, not real-user relevance or
+a speed advantage. Scale, labeled retrieval quality and crop proposals are revisit work.
+
+Swap the comparison path without editing algorithms:
+
+```bash
+DISCOVERY_CONFIG='{"lens_retriever":"retriever:exact-cosine:v1","lens_pool_size":100}'
+FEED_CONFIG='{"interest_boost":0}'
+```
+
+Set environment values before rebuilding/restarting the app. Default Lens retrieval uses
+HNSW with a bounded 100-candidate pool. Existing typed registries support alternate sources,
+crop encoders and whole Lens services. New model recipes require matching catalog backfill,
+metadata and their own index/config versions; changing a label alone is insufficient.
+
+## Import, safety and delivery tradeoffs
+
+URL import supports direct images. It validates each HTTP(S) redirect, accepts ports 80/443,
+rejects credentials and all private/reserved DNS answers, connects to the validated IP
+with the original hostname for TLS verification, ignores proxy environment variables,
+bounds time/bytes/redirects and revalidates decoded image pixels. HTML scraping is outside
+this baseline. The normal upload limits, stripping, queue retries and safety gate also
+apply to imports.
+
+The upload classifier is a replaceable zero-shot CLIP baseline. It compares image cosine
+scores against two unsafe prompts and six safe prompts, then holds an upload when unsafe
+similarity is at least 0.28 and exceeds the best safe similarity by 0.03. Scores, thresholds
+and `safety:clip-zero-shot:v1` are recorded. These similarities are not probabilities; the
+policy has no labeled safety calibration and is not a production safety guarantee. Human
+reports/review remain necessary. Classifier/runtime failures leave processing failed for
+retry rather than publishing unchecked media. Exact-pixel hashing does not catch perceptual
+near duplicates; learned moderation and perceptual hashes are the corresponding revisits.
+
+Digests are opt-in and limited to one outbox record per account/UTC date. A separate small
+scheduler prepares and retries deliveries every minute, with a stable Message-ID and a
+row-locked outbox. It checks opt-out and current blocks/mutes at dispatch. It sends through
+local Mailpit; there is no external email-provider integration. SMTP delivery is at least
+once across a crash between send and commit, so a duplicate is possible in that window.
+Unread notices from the preceding 24 hours form the digest. Settings/hidden and social
+preference lists are bounded to the first 100 entries in this demo.
+
+## Validation and learning follow-up
+
+The acceptance suite covers ready/future/secret/blocked/muted/hidden candidates, cursor
+binding, request/item/features without implied views, concurrent event retries and
+out-of-order attribution, comments/likes/ownership, moderation privileges and publication,
+interest ordering, real CLIP inference, duplicate uploads, URL validation and local SMTP.
+Fresh disposable-database migration checks preserve legacy rows and exercise downgrade /
+re-upgrade. Desktop/mobile browser checks cover the old core loop and new Phase 4 screens.
+Recorded browser fixtures and their media are cleaned without touching the demo catalog.
+
+See `PHASE4_WALKTHROUGH.md` for the statement-by-statement core walkthrough and explain-back
+questions. Implementation/technical acceptance and the developer's learning discussion are
+separate: no explain-back answers have been assumed. The operational simulator remains
+for production-condition practice; this retrieval comparison makes no preference claims.

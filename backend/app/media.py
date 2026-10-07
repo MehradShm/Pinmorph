@@ -115,8 +115,8 @@ def process_pin(pin_id: str, request_id: str | None = None) -> str:
                 return "missing"
             if job and pin.media_job_id != job.id:
                 return "superseded"
-            if pin.status == "ready":
-                return "ready"
+            if pin.status in {"ready", "removed", "quarantined"}:
+                return pin.status
             pin.status = "processing"
             db.commit()
             try:
@@ -144,20 +144,43 @@ def process_pin(pin_id: str, request_id: str | None = None) -> str:
                 db.refresh(pin)
                 if job and pin.media_job_id != job.id:
                     return "superseded"
+                if pin.status == "removed":
+                    return "removed"
                 pin.width, pin.height, pin.dominant_color = width, height, color
-                pin.variants, pin.status, pin.processing_error = metadata, "ready", None
+                from app.discovery.crop import CropBox, prepare_crop
+                from app.ml.vector_store import store_image_embedding
+                from app.product.models import SafetyReport
+                from app.product.safety import classify
+
+                pixels = prepare_crop(data, CropBox(), settings).image_bytes
+                safety = classify(pixels, settings)
+                pin.source_metadata = dict(pin.source_metadata, safety=safety)
+                pin.variants, pin.processing_error = metadata, None
+                if safety["hold"]:
+                    pin.status = "quarantined"
+                    db.add(
+                        SafetyReport(
+                            pin_id=pin.id,
+                            reason="Upload classifier requested review",
+                            source=safety["version"],
+                        )
+                    )
+                else:
+                    pin.status = "ready"
+                store_image_embedding(db, pin, pixels, settings)
                 db.commit()
                 logger.info(
                     json.dumps(
                         {
-                            "event": "media_ready",
+                            "event": "media_processed",
+                            "status": pin.status,
                             "pin_id": pin_id,
                             "request_id": request_id,
                             "job_id": job.id if job else None,
                         }
                     )
                 )
-                return "ready"
+                return pin.status
             except Exception as exc:
                 db.rollback()
                 db.refresh(pin)

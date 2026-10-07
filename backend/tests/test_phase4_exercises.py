@@ -1,6 +1,5 @@
 """Known-answer Lens targets; no synthetic vectors are used in application serving."""
 
-import os
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -9,10 +8,7 @@ from app.feed.contracts import FeedContext
 from app.ml.contracts import Embedding, RetrievalHit, VectorItem
 from app.ml.discovery import compare_lens_retrieval, eligible_lens_vectors
 
-pytestmark = [
-    pytest.mark.phase4_exercise,
-    pytest.mark.skipif(os.getenv("RUN_PHASE4_EXERCISES") != "1", reason="Phase 4 learning core"),
-]
+pytestmark = pytest.mark.phase4_exercise
 
 
 def hit(pin_id):

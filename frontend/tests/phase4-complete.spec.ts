@@ -1,0 +1,52 @@
+import { test, expect } from '@playwright/test';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { execFileSync } from 'node:child_process';
+
+test('Following, viewport events, interests, Lens, pin actions, moderation and digest settings', async ({ page, browser, baseURL }) => {
+  test.setTimeout(120_000);
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  const events: { kind: string; pin_id: string }[] = [];
+  page.on('request', request => { if (request.url().endsWith('/api/events')) events.push(request.postDataJSON()); });
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const image = execFileSync('.venv/bin/python', ['-c', 'import hashlib,io,sys; from PIL import Image; b=io.BytesIO(); Image.new("RGB", (80,120), tuple(hashlib.sha256(sys.argv[1].encode()).digest()[:3])).save(b,"PNG"); sys.stdout.buffer.write(b.getvalue())', stamp], { cwd: '..' });
+  const email = `browser-${stamp}@example.test`;
+  const signup = await page.request.post('/api/auth/signup', { data: { email, display_name: 'Discovery collector', password: 'browser-password-123' } });
+  expect(signup.status()).toBe(201); const user = await signup.json();
+  const artifact = test.info().outputPath('account.json'); mkdirSync(dirname(artifact), { recursive: true }); writeFileSync(artifact, JSON.stringify({ id: user.id, email }));
+  const creator = await browser.newContext({ baseURL });
+  try {
+    const creatorEmail = `browser-${Date.now()}-${Math.random().toString(36).slice(2)}@example.test`;
+    const signup2 = await creator.request.post('/api/auth/signup', { data: { email: creatorEmail, display_name: 'Idea maker', password: 'browser-password-123' } });
+    expect(signup2.status()).toBe(201); const owner = await signup2.json();
+    const artifact2 = test.info().outputPath('owner/account.json'); mkdirSync(dirname(artifact2), { recursive: true }); writeFileSync(artifact2, JSON.stringify({ id: owner.id, email: creatorEmail }));
+    const title = `Fashion color ${stamp}`;
+    const upload = await creator.request.post('/api/pins', { multipart: { title, image: { name: 'source.png', mimeType: 'image/png', buffer: image } } });
+    expect(upload.status(), await upload.text()).toBe(202); const pin = await upload.json();
+    await expect.poll(async () => (await (await creator.request.get(`/api/pins/${pin.id}`)).json()).status, { timeout: 40_000 }).toBe('ready');
+    expect((await page.request.put(`/api/social/users/${owner.id}/follow`)).status()).toBe(200);
+    await page.goto('/'); await page.getByRole('button', { name: 'Following', exact: true }).click();
+    const open = page.getByRole('button', { name: `Open ${title}`, exact: true }); await expect(open).toBeVisible();
+    await open.scrollIntoViewIfNeeded();
+    await expect.poll(() => events.some(e => e.kind === 'impression' && e.pin_id === pin.id)).toBeTruthy();
+    await open.click(); const dialog = page.getByRole('dialog', { name: title, exact: true });
+    await dialog.getByRole('button', { name: /^Like ·/ }).click(); await expect(dialog.getByRole('button', { name: /^Unlike · 1/ })).toBeVisible();
+    await dialog.getByLabel('Add a comment').fill('A useful new idea.'); await dialog.getByRole('button', { name: 'Post comment', exact: true }).click(); await expect(dialog.getByText('A useful new idea.', { exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Share link', exact: true }).click(); await expect(dialog.getByRole('status')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Report pin', exact: true }).click(); await dialog.getByLabel('Reason for reporting').fill('Please review this fixture.'); await dialog.getByRole('button', { name: 'Submit report', exact: true }).click(); await expect(dialog.getByText('Report submitted for review.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Hide pin', exact: true }).click(); await expect(open).toHaveCount(0);
+    await page.getByRole('button', { name: 'Settings', exact: true }).click(); await page.getByLabel('fashion', { exact: true }).check(); await page.getByLabel('Daily activity email', { exact: true }).check(); await page.getByRole('button', { name: 'Save preferences', exact: true }).click(); await expect(page.getByText('Preferences saved.', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Show again', exact: true }).click();
+    await page.getByRole('button', { name: 'Lens', exact: true }).click(); await page.getByLabel('Search with an image').setInputFiles({ name: 'crop.png', mimeType: 'image/png', buffer: image });
+    await page.getByLabel('left', { exact: true }).fill('0.1'); await page.getByLabel('right', { exact: true }).fill('0.9'); await page.getByRole('button', { name: 'Find similar pins', exact: true }).click();
+    await expect(page.getByRole('button', { name: `Open ${title}`, exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Import image', exact: true }).click();
+    const importer = page.getByRole('dialog', { name: 'Import an image', exact: true }); await importer.getByLabel('Image URL').fill('http://127.0.0.1/image.png'); await importer.getByLabel('Title', { exact: true }).fill('Blocked local image'); await importer.getByRole('button', { name: 'Import image', exact: true }).click(); await expect(importer.getByRole('alert')).toContainText(/Private|port|resolve/); await importer.getByRole('button', { name: 'Close dialog' }).click();
+    execFileSync('.venv/bin/python', ['-m', 'scripts.moderator', email], { cwd: '..' });
+    await page.reload(); await page.getByRole('button', { name: 'Moderation', exact: true }).click();
+    const review = page.locator('.moderation-row').filter({ hasText: title }); await expect(review).toBeVisible(); await review.getByRole('button', { name: 'dismiss', exact: true }).click(); await expect(review).toHaveCount(0);
+    expect(events.some(e => e.kind === 'engagement' && e.pin_id === pin.id)).toBeTruthy();
+    expect(errors).toEqual([]); expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+    await page.screenshot({ path: `test-results/phase4-complete-${test.info().project.name}.png`, fullPage: true });
+  } finally { await creator.close(); }
+});

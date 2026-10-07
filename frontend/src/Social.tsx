@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { api, jsonBody, message, type Board, type Page, type Profile, type User } from './api';
+import { api, jsonBody, message, type Board, type Page, type Profile, type Pin, type PinPage, type User } from './api';
 import Modal from './Modal';
 
 export function People({ onProfile }: { onProfile: (id: string) => void }) {
@@ -39,6 +39,9 @@ export function ProfileDialog({ id, user, onClose, onAuth, onBoard, onEdited, on
   const [boardCursor, setBoardCursor] = useState<string | null>(null);
   const [connections, setConnections] = useState<Profile[]>([]);
   const [relation, setRelation] = useState('');
+  const [tab, setTab] = useState<'boards' | 'pins'>('boards');
+  const [createdPins, setCreatedPins] = useState<Pin[]>([]);
+  const [pinCursor, setPinCursor] = useState<string | null>(null);
   const [connectionCursor, setConnectionCursor] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -82,6 +85,13 @@ export function ProfileDialog({ id, user, onClose, onAuth, onBoard, onEdited, on
       setBoards(previous => [...previous, ...page.items]); setBoardCursor(page.next_cursor);
     } catch (error) { setError(message(error)); } finally { setBusy(false); }
   }
+  async function showPins(after: string | null = null) {
+    setBusy(true); setError('');
+    try {
+      const page = await api<PinPage>(`/profiles/${id}/pins${after ? `?cursor=${encodeURIComponent(after)}` : ''}`);
+      setCreatedPins(previous => after ? [...previous, ...page.items] : page.items); setPinCursor(page.next_cursor); setTab('pins');
+    } catch (error) { setError(message(error)); } finally { setBusy(false); }
+  }
   return <Modal title={profile?.display_name || 'Profile'} onClose={onClose}>
     {profile ? <>
       <h2>{profile.display_name}</h2><p className="description">{profile.bio}</p>
@@ -106,10 +116,19 @@ export function ProfileDialog({ id, user, onClose, onAuth, onBoard, onEdited, on
         {connections.length === 0 && <p className="muted">No people here yet.</p>}
         {connectionCursor && <button className="text-button" disabled={busy} onClick={() => showConnections(relation, connectionCursor)}>More connections</button>}
       </section>}
+      <div role="tablist" aria-label="Profile collections" className="inline-actions">
+        <button role="tab" aria-selected={tab === 'boards'} onClick={() => setTab('boards')}>Boards</button>
+        <button role="tab" aria-selected={tab === 'pins'} disabled={busy} onClick={() => showPins()}>Created pins</button>
+      </div>
+      {tab === 'boards' ? <section role="tabpanel" aria-label="Boards">
       <h3>{own ? 'Your boards' : 'Public boards'}</h3>
       <div className="profile-boards">{boards.map(board => <button className="secondary" key={board.id} onClick={() => onBoard(board)}>{board.name}{board.is_secret ? ' · Secret' : ''}</button>)}</div>
       {boards.length === 0 && <p className="muted">No public boards yet.</p>}
       {boardCursor && <button className="text-button" disabled={busy} onClick={moreBoards}>More boards</button>}
+      </section> : <section role="tabpanel" aria-label="Created pins"><div className="related-grid">{createdPins.map(pin => <button className="pin-open" key={pin.id} onClick={() => { onClose(); location.hash = `pin/${pin.id}`; }} aria-label={`Created ${pin.title}`}><img src={pin.thumbnail_url || ''} alt={pin.title} /><h4>{pin.title}</h4></button>)}</div>
+        {!createdPins.length && <p className="muted">No published pins yet.</p>}
+        {pinCursor && <button className="text-button" disabled={busy} onClick={() => showPins(pinCursor)}>More created pins</button>}
+      </section>}
     </> : <p className="muted">Loading profile…</p>}
     {error && <p className="error" role="alert">{error}</p>}
   </Modal>;
@@ -146,10 +165,11 @@ export function Activity({ onProfile }: { onProfile: (id: string) => void }) {
     catch (error) { setError(message(error)); } finally { setBusy(false); }
   }
   return <section aria-label="Activity and preferences">
+    <DigestStatus />
     {error && <p className="error" role="alert">{error}</p>}
     {notices.map(row => <article className="activity-row" key={row.id}>
       <button className="text-button" onClick={() => onProfile(row.actor_id)}>{row.actor_name}</button>
-      <span>{row.kind === 'board_follow' ? 'followed your board' : 'followed you'}</span>
+      <span>{row.kind === 'board_follow' ? 'followed your board' : row.kind === 'comment' ? 'commented on your pin' : row.kind === 'reaction' ? 'liked your pin' : row.kind === 'save' ? 'saved your pin' : 'followed you'}</span>
       <time dateTime={row.created_at}>{new Date(row.created_at).toLocaleDateString()}</time>
       {!row.read_at && <button className="secondary" disabled={busy} onClick={() => read(row.id)}>Mark read</button>}
     </article>)}
@@ -160,4 +180,12 @@ export function Activity({ onProfile }: { onProfile: (id: string) => void }) {
     {preferences.muted.map(person => <p key={person.id}>{person.display_name} <button className="text-button" disabled={busy} onClick={() => restore(person.id, 'mute')}>Unmute</button></p>)}
     {preferences.blocked.length + preferences.muted.length === 0 && <p className="muted">You haven’t muted or blocked anyone.</p>}
   </section>;
+}
+
+function DigestStatus() {
+  const [rows, setRows] = useState<{ id: string; status: string; period: string }[]>([]);
+  const [error, setError] = useState('');
+  async function load() { try { const page = await api<{ items: typeof rows }>('/notifications/digests'); setRows(page.items); } catch (e) { setError(message(e)); } }
+  useEffect(() => { void load(); }, []);
+  return <section aria-label="Email digests"><h3>Email digests</h3>{rows.map(row => <p key={row.id}>{row.period} · {row.status}</p>)}<button className="text-button" onClick={load}>Refresh digest status</button>{error && <p role="alert">{error}</p>}</section>;
 }

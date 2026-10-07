@@ -1,3 +1,5 @@
+import math
+
 from app.feed.contracts import FeedContext
 from app.learning import LearningExercisePending
 from app.ml.config import EmbeddingConfig, UserEmbeddingConfig
@@ -6,8 +8,12 @@ from app.ml.contracts import Embedding, HistoryEntry, PinContent
 
 def normalize_vector(values: tuple[float, ...]) -> tuple[float, ...]:
     """Return a unit vector; reject empty, nonfinite, or zero-norm inputs."""
-    # TODO(phase3a-normalization): L2 normalization with explicit invalid-input handling.
-    raise LearningExercisePending("phase3a-normalization", phase="3A")
+    if not values or not all(math.isfinite(x) for x in values):
+        raise ValueError("Vector must be nonempty and finite")
+    norm = math.hypot(*values)
+    if not norm or not math.isfinite(norm):
+        raise ValueError("Vector norm must be positive and finite")
+    return tuple(x / norm for x in values)
 
 
 class ClipPinEmbedder:

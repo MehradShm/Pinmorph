@@ -36,6 +36,7 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(String(254), unique=True)
     password_hash: Mapped[str | None] = mapped_column(Text)
     display_name: Mapped[str] = mapped_column(String(80))
+    is_moderator: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     bio: Mapped[str] = mapped_column(String(500), default="", server_default="")
     source_key: Mapped[str | None] = mapped_column(String(200), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -58,7 +59,10 @@ class ImportRun(Base):
 
 class Pin(Base):
     __tablename__ = "pins"
-    __table_args__ = (Index("ix_pins_search_document", "search_document", postgresql_using="gin"),)
+    __table_args__ = (
+        Index("ix_pins_search_document", "search_document", postgresql_using="gin"),
+        UniqueConstraint("owner_id", "pixel_hash", name="uq_pins_owner_pixel_hash"),
+    )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     owner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     title: Mapped[str] = mapped_column(String(200))
@@ -76,6 +80,7 @@ class Pin(Base):
     import_run_id: Mapped[str | None] = mapped_column(ForeignKey("import_runs.id"))
     provenance: Mapped[str] = mapped_column(String(40), default="manual_upload")
     source_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
+    pixel_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     original_key: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(16), default="queued", index=True)
     # One job at a time; the active job ID also protects against stale retries.

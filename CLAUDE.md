@@ -44,8 +44,9 @@ product features, the separate MIND CTR study, and simulator exercises follow th
   `make phase3-exercises` (expected to fail at TODOs until implemented); see docs/PHASE3A.md
 - Phase 3B MIND fixture: `make mind-fixture`; prerequisite inventory: `make phase3b-preflight`;
   opt-in CTR targets: `make phase3b-exercises`; see docs/PHASE3B.md for disposable setup.
-- Phase 4 product/discovery guide: docs/PHASE4.md; `make phase4-preflight` inventories pending
-  modules and `make phase4-exercises` opts into unfinished Lens targets.
+- Phase 4 is implemented: docs/PHASE4.md and docs/PHASE4_WALKTHROUGH.md.
+  `make phase4-preflight` is static; `make lens-evaluate` writes real CLIP/ANN evidence.
+  Shared Phase 2 and Phase 4 core checks now run normally; Phase 3A training/3B CTR remain exercises.
 - Setup and container-only checks: see README.md
 
 ## Non-negotiable conventions

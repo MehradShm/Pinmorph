@@ -19,11 +19,12 @@ from app.discovery.api import router as discovery_router
 from app.discovery.service import DiscoveryServices
 from app.feed.api import router as feed_router
 from app.feed.service import FeedService
-from app.health import check_dependencies, check_postgres
+from app.health import check_dependencies, check_lens, check_postgres
 from app.learning import LearningExercisePending
 from app.logging.service import EventIngestor
 from app.operations.api import router as operations_router
 from app.operations.metrics import RequestMetrics
+from app.product.api import router as product_router
 from app.search.api import router as search_router
 from app.search.service import PostgresTextSearch
 from app.social.api import router as social_router
@@ -40,7 +41,7 @@ def create_app(
     settings = settings or Settings()
     # Validate versioned configuration before the application starts accepting requests.
     feed_service = FeedService(settings.feed_config)
-    discovery_services = DiscoveryServices(settings.discovery_config)
+    discovery_services = DiscoveryServices(settings.discovery_config, settings=settings)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
@@ -66,6 +67,7 @@ def create_app(
             if health_checks is not None
             else {
                 "postgres": lambda: check_postgres(engine),
+                "lens": lambda: check_lens(settings),
                 "redis": redis.ping,
                 "object_storage": lambda: storage.head_bucket(Bucket=settings.s3_bucket),
             }
@@ -84,6 +86,7 @@ def create_app(
     application.include_router(social_router)
     application.include_router(boards_router)
     application.include_router(discovery_router)
+    application.include_router(product_router)
     application.include_router(operations_router)
 
     @application.exception_handler(LearningExercisePending)

@@ -13,6 +13,7 @@ router = APIRouter(prefix="/api/search")
 
 
 class SearchPage(PinPage):
+    attributed: bool = False
     model_versions: dict[str, str]
 
 
@@ -49,7 +50,36 @@ def search_pins(
         pins, next_cursor = backend.search(db, query, user, utcnow(), limit, cursor)
     except ValueError as exc:
         raise HTTPException(422, "Invalid cursor for this search") from exc
+    if user:
+        from app.feed.contracts import Candidate, FeedContext, RankedCandidate
+        from app.feed.persistence import record_page
+
+        now = utcnow()
+        ctx = FeedContext(request.state.request_id, user.id, now, now, surface="search")
+        rows = [
+            RankedCandidate(
+                Candidate(
+                    pin,
+                    (backend.version,),
+                    {"age_hours": max(0, (now - pin.available_at).total_seconds() / 3600)},
+                ),
+                -max(0, (now - pin.available_at).total_seconds() / 3600),
+                -max(0, (now - pin.available_at).total_seconds() / 3600),
+            )
+            for pin in pins
+        ]
+        record_page(
+            db,
+            ctx,
+            rows,
+            versions={"search": backend.version},
+            config_version="search-config:v1",
+            details={"query_fingerprint": query.fingerprint()},
+            next_cursor=next_cursor,
+            feature_schema="features:search:v1",
+        )
     return SearchPage(
+        attributed=bool(user),
         items=[pin_out(pin) for pin in pins],
         next_cursor=next_cursor,
         request_id=request.state.request_id,

@@ -227,3 +227,54 @@ what would make us revisit it. These entries double as interview prep notes.
 - **Why:** crop preparation can be verified without models. Image-only queries and image-title catalog fusion need an explicit compatibility/quality experiment; toy overlap checks do not establish crop relevance.
 - **Alternatives:** silently use random vectors or downloaded weights; crop before EXIF orientation; persist user query images by default; call ANN agreement user accuracy.
 - **Revisit if:** object detection proposes crops, a product-only index is needed, or a real corpus supports exact/ANN latency and retrieval comparisons. Following/related/Lens serving must use shared request/item/view attribution after Phase 2 acceptance.
+
+## 2026-10-07 — complete the authorized Phase 4 cores
+
+The user asked to finish Phase 4 after its remaining algorithms/products were explicitly
+listed. This authorizes core implementation under the working agreement. Complete shared
+Phase 2 serving/events/baselines first rather than build alternate surface-specific logging.
+Atomic request/item/features and separately ingested viewport views preserve attribution.
+Use global receipt advisory locks and request row locks for retries/reconciliation. The
+walkthrough explains these statements; explain-back answers remain a future discussion.
+
+## 2026-10-07 — social retrieval on read and public related evidence
+
+Following unions followed creators and public-board saves at read time; related counts
+public co-boards and falls back to eligible same-recipe image similarity. Shared block/mute,
+hide and availability checks precede serving. Preserve contributing source names and use
+the same persistence writer. Revisit fan-out/invalidation and fixed-candidate co-board versus
+similarity comparisons once traffic/evidence warrants them.
+
+## 2026-10-07 — pinned image-only CLIP in a separate CPU service
+
+Use original CLIP ViT-B/32 with verified public weights and pinned MIT source in an isolated
+CPU service. Catalog and crop use one image-only version, independent of the Phase 3A
+image/title fusion recipe. Weights are explicitly prepared into ignored local storage.
+No random fallback or implicit download is permitted. Exact cosine is the correctness
+reference; a managed partial 512-dimensional HNSW index supports approximate retrieval.
+Expose exact/ANN and pool selection through DiscoveryConfig. Alembic's expression-index
+comparison needs one scoped exclusion; migration acceptance asserts the physical index.
+Record the actual filtered query plan and elapsed timings. Revisit larger corpus agreement,
+latency, labeled crop relevance, fusion and object-proposed crops; the small synthetic corpus
+is evidence about implementation, not real-user preference.
+
+## 2026-10-07 — transparent interests and thin product safety
+
+Persist optional interests and expose a configurable keyword-match boost over the selected
+baseline. Empty preferences or coefficient zero preserve baseline behavior. Revisit learned
+interest features with suitable data. URL import accepts bounded direct images with per-hop
+public DNS validation/IP pinning and shared upload processing. Add exact oriented-pixel
+hashes with same-owner race protection and ranked duplicate suppression. Use a versioned
+zero-shot CLIP upload hold baseline with explicit thresholds, private quarantine and audited
+moderator review. Uncalibrated safety scores and pixel hashing do not establish a production
+safety classifier or perceptual deduplication; labeled safety/near-duplicate experiments
+are separate revisits.
+
+## 2026-10-07 — local SMTP outbox for digest practice
+
+Digest email is opt-in, one outbox identity per user/UTC date, delivered only to local Mailpit
+in the provided stack. A separate minute scheduler retries pending rows; dispatch rechecks
+consent and block/mute visibility. Stable message IDs aid inspection. SMTP send/DB commit
+cannot be atomic, so crash recovery is at least once. Revisit provider integration, recipient
+batching, scheduling and delivery deduplication separately. Keep the production-condition
+simulator in its independent project; no preference conclusions come from these fixtures.

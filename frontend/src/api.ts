@@ -1,5 +1,6 @@
-export type User = { id: string; display_name: string; email: string };
+export type User = { id: string; display_name: string; email: string; is_moderator?: boolean };
 export type Pin = {
+  served?: { request_id: string; position: number; impression_event_id?: string };
   id: string; title: string; description: string; source_url: string | null;
   owner_id: string | null; provenance: string; status: string;
   processing_error: string | null; width: number | null; height: number | null;
@@ -9,7 +10,8 @@ export type Board = { id: string; name: string; pin_count: number; owner_id: str
 export type Section = { id: string; name: string };
 export type Profile = { id: string; display_name: string; bio: string; follower_count: number; following_count: number; is_following: boolean; is_muted: boolean };
 export type Page<T> = { items: T[]; next_cursor: string | null };
-export type PinPage = { items: Pin[]; next_cursor: string | null; request_id: string };
+export type FeedPage = { items: { pin: Pin; position: number }[]; next_cursor: string | null; request_id: string };
+export type PinPage = { attributed?: boolean; items: Pin[]; next_cursor: string | null; request_id: string };
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

@@ -66,6 +66,12 @@ def test_phase4_upgrade_preserves_private_membership_and_backfills_search(monkey
             )
         command.upgrade(config, "head")
         with scratch.begin() as connection:
+            definition = connection.scalar(
+                text("SELECT indexdef FROM pg_indexes WHERE indexname = 'ix_lens_clip_hnsw'")
+            )
+            assert "hnsw" in definition and "vector_cosine_ops" in definition
+            assert "vector(512)" in definition and "embedder:clip-image-crop:v1" in definition
+            assert connection.scalar(text("SELECT is_moderator FROM users")) is False
             assert connection.scalar(text("SELECT is_secret FROM boards")) is True
             assert connection.scalar(text("SELECT bio FROM users")) == ""
             assert (

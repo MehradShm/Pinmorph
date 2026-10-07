@@ -147,8 +147,16 @@ def catalog(
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
     cursor: Annotated[str | None, Query(max_length=300)] = None,
 ):
-    # Plain catalog pagination. Recommendation ordering/attribution arrives in Phase 2.
+    # Anonymous catalog browsing is separate from authenticated recommendation serving.
+    from app.product.models import HiddenPin
+
+    hidden = (
+        select(HiddenPin.pin_id).where(HiddenPin.user_id == user.id)
+        if user
+        else select(HiddenPin.pin_id).where(False)
+    )
     statement = select(Pin, Pin.created_at).where(
+        Pin.id.not_in(hidden),
         Pin.status == "ready",
         Pin.available_at <= utcnow(),
         visible_owner(Pin.owner_id, user, include_muted=True),
@@ -188,6 +196,19 @@ def upload_pin(
         validate_image(data, settings)
     except InvalidImage as exc:
         raise HTTPException(422, str(exc)) from exc
+    return create_uploaded_pin(
+        request, db, user, data, metadata.title, metadata.description, metadata.source_url
+    )
+
+
+def create_uploaded_pin(request, db, user, data, title, description, source_url):
+    settings = request.app.state.settings
+    metadata = PinMetadata(title=title, description=description, source_url=source_url or None)
+    from app.product.safety import pixel_hash
+
+    digest = pixel_hash(data)
+    if db.scalar(select(Pin.id).where(Pin.owner_id == user.id, Pin.pixel_hash == digest)):
+        raise HTTPException(409, "You already uploaded this image; use the existing pin")
     pin_id = new_id()
     key = f"pins/{pin_id}/original"
     request.app.state.storage.put_object(
@@ -200,10 +221,19 @@ def upload_pin(
         description=metadata.description,
         source_url=str(metadata.source_url) if metadata.source_url else None,
         original_key=key,
+        pixel_hash=digest,
     )
     db.add(pin)
     try:
         db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        request.app.state.storage.delete_object(Bucket=settings.s3_bucket, Key=key)
+        if exc.orig.diag.constraint_name == "uq_pins_owner_pixel_hash":
+            raise HTTPException(
+                409, "You already uploaded this image; use the existing pin"
+            ) from exc
+        raise
     except Exception:
         db.rollback()
         request.app.state.storage.delete_object(Bucket=settings.s3_bucket, Key=key)
@@ -354,8 +384,17 @@ def save_pin(board_id: str, pin_id: str, db: DB, user: CurrentUser):
     pin = visible_pin(db, pin_id, user)
     if pin.status != "ready" or pin.available_at > utcnow():
         raise HTTPException(404, "Ready pin not found")
+    if pin.owner_id and pin.owner_id != user.id:
+        from app.social.api import lock_pair
+
+        lock_pair(db, user.id, pin.owner_id)
+        pin = visible_pin(db, pin_id, user)
     save = Save(board_id=board_id, pin_id=pin_id)
     db.add(save)
+    if pin.owner_id:
+        from app.social.api import notify
+
+        notify(db, pin.owner_id, user.id, "save")
     try:
         db.commit()
     except IntegrityError:

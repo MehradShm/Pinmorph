@@ -299,3 +299,19 @@ import, comments/reactions/hide/report, digest email, moderation/classifier/dupl
 and richer profile/settings. Secret membership does not imply private pins. Preference
 lists currently show the first 100 blocked/muted users each. Simulator capability remains
 diagnostics-only; the earlier minimum run adapter/reset and CTR work are still pending.
+
+## 2026-10-07 — finish Phase 4 implementation
+
+Completed shared baseline serving/assignment/features and event receipt/reconciliation;
+Following, public co-board related discovery and same-recipe similarity fallback; pinned
+CPU CLIP crop inference, immutable catalog vectors, exact/HNSW retrieval and evaluation;
+optional interest onboarding/settings; bounded public direct-image import; comments/likes/
+share/hide/report; broader in-app activity; local SMTP daily outbox/scheduler; upload
+classification holds, pixel duplicates and moderator-only review/preview.
+
+The implementation guide, core walkthrough and revisit decisions are recorded. Default
+Phase 2/4 core checks now execute normally. Separate Phase 3A training and Phase 3B CTR
+learning targets are preserved. Explain-back discussion has not been assumed complete.
+Final acceptance counts and the real Lens result are recorded in docs/reports/phase4-checks.json
+and docs/reports/phase4-lens.json. The 32-pin demo catalog and earlier isolated states are
+retained; generated validation accounts/media are cleaned by exact fixture identity.

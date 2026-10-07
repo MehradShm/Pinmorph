@@ -1,5 +1,9 @@
 # Phase 3A: personalized ML v1
 
+> Phase 4 completes shared Phase 2 cores, vector normalization, exact/pgvector retrieval
+> and an independent pinned image-only CLIP recipe for Lens. The image/title-fusion, user
+> embedding, training, personalized ranking and diversity exercises below remain separate.
+
 Status: **started; contracts, configuration, embedding storage, JSON artifacts, and learning
 targets implemented. Core ML algorithms remain exercises.** Phase 2's core is still pending.
 The current UI continues the Phase 1 catalog; there is no personalized feed or trained model.

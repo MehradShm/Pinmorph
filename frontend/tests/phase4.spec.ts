@@ -56,6 +56,9 @@ test('keyword search, profile editing, private boards, sections, follows and act
   await profile.getByLabel('About you').fill('Collecting gardens.');
   await profile.getByRole('button', { name: 'Save profile', exact: true }).click();
   await expect(profile.getByText('Collecting gardens.', { exact: true })).toBeVisible();
+  await profile.getByRole('tab', { name: 'Created pins', exact: true }).click();
+  await expect(profile.getByRole('button', { name: `Created ${title}`, exact: true })).toBeVisible();
+  await profile.getByRole('tab', { name: 'Boards', exact: true }).click();
   await profile.getByRole('button', { name: 'Close dialog' }).click();
 
   const guest = await browser.newContext({ baseURL });

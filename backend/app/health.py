@@ -2,8 +2,17 @@ from collections.abc import Callable
 from time import perf_counter
 from typing import Literal
 
+import httpx
 from pydantic import BaseModel
 from sqlalchemy import text
+
+
+def check_lens(settings):
+    with httpx.Client(timeout=settings.health_timeout_seconds, trust_env=False) as client:
+        response = client.get(settings.lens_endpoint + "/health")
+        response.raise_for_status()
+        if response.json().get("version") != "embedder:clip-image-crop:v1":
+            raise RuntimeError("Incompatible Lens runtime")
 
 
 class DependencyHealth(BaseModel):
@@ -17,7 +26,7 @@ def check_postgres(engine) -> None:
         connection.execute(text("SET LOCAL statement_timeout = 2000"))
         connection.execute(text("SELECT 1"))
         # Update alongside schema migrations: an older schema is not ready to serve this API.
-        if connection.scalar(text("SELECT version_num FROM alembic_version")) != "d12ac1433a55":
+        if connection.scalar(text("SELECT version_num FROM alembic_version")) != "4f1a7b239abc":
             raise RuntimeError("Database schema does not match this application version")
         if not connection.scalar(
             text("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')")

@@ -1,13 +1,21 @@
-"""Independent Phase 4 algorithms; infrastructure does not stand in for their acceptance."""
+"""Versioned social, co-board and image-only discovery baselines."""
 
+from dataclasses import replace
 from typing import Protocol
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.config import Settings
 from app.discovery.crop import PreparedCrop
 from app.feed.contracts import Candidate, FeedContext
-from app.learning import LearningExercisePending
+from app.ml.baselines import CatalogCandidateSource
 from app.ml.contracts import Embedding, RetrievalHit, VectorItem
+from app.ml.retrieval import ExactVectorRetriever, PgvectorANNRetriever
+from app.ml.vector_store import catalog_vectors, encode_image
+from app.models import Board, Save, User
+from app.social.models import BoardFollow, UserFollow
+from app.social.policy import visible_owner
 
 
 class CropEmbedder(Protocol):
@@ -34,60 +42,127 @@ class FollowingCandidateSource:
     version = "candidate:following-read:v1"
 
     def retrieve(self, db: Session, context: FeedContext) -> list[Candidate]:
-        """Union ready pins from followed creators and followed public boards, deduplicated.
-
-        Apply follow/save existence at as_of, pin availability and block/mute policy.
-        Secret boards must never contribute, including boards made secret after following.
-        Preserve all contributing sources and point-in-time scoring features. Serve through
-        the shared FeedService/request-item persistence, not a second logging implementation.
-        Baseline is a timestamp/ID ordered union; revisit fan-out on write at higher traffic.
-        """
-        # TODO(phase4-following): eligible social candidates and shared serving integration.
-        raise LearningExercisePending("phase4-following", phase="4")
+        viewer = db.get(User, context.user_id)
+        creators = set(
+            db.scalars(
+                select(UserFollow.followed_id).where(
+                    UserFollow.follower_id == context.user_id,
+                    UserFollow.created_at <= context.as_of,
+                )
+            )
+        )
+        board_pins = set(
+            db.scalars(
+                select(Save.pin_id)
+                .join(Board, Board.id == Save.board_id)
+                .join(BoardFollow, BoardFollow.board_id == Board.id)
+                .where(
+                    BoardFollow.follower_id == context.user_id,
+                    BoardFollow.created_at <= context.as_of,
+                    Board.is_secret.is_(False),
+                    Board.created_at <= context.as_of,
+                    Save.created_at <= context.as_of,
+                    visible_owner(Board.owner_id, viewer, include_muted=True),
+                )
+            )
+        )
+        result = []
+        for c in CatalogCandidateSource().retrieve(db, context):
+            sources = []
+            if c.pin.owner_id in creators:
+                sources.append("following:creator:v1")
+            if c.pin.id in board_pins:
+                sources.append("following:public-board:v1")
+            if sources:
+                result.append(replace(c, sources=tuple(sources)))
+        return result
 
 
 class RelatedPinSource:
     version = "candidate:related-public-boards:v1"
 
     def retrieve(self, db: Session, context: FeedContext, context_pin_id: str) -> list[Candidate]:
-        """Count shared public boards containing the context pin; never inspect secret boards.
-
-        Exclude context pin, future saves/items, blocked/muted creators and duplicate results.
-        Backfill from same-version eligible embedding similarity when shared-board evidence
-        is absent. Compare fixed candidates with similarity alone. Integrate attribution with
-        FeedService (surface=related, context pin), including model/config/source versions.
-        """
-        # TODO(phase4-related): co-board candidates, explicit similarity fallback and serving.
-        raise LearningExercisePending("phase4-related", phase="4")
+        viewer = db.get(User, context.user_id)
+        boards = (
+            select(Save.board_id)
+            .join(Board, Board.id == Save.board_id)
+            .where(
+                Save.pin_id == context_pin_id,
+                Save.created_at <= context.as_of,
+                Board.is_secret.is_(False),
+                Board.created_at <= context.as_of,
+                visible_owner(Board.owner_id, viewer, include_muted=True),
+            )
+        )
+        counts = dict(
+            db.execute(
+                select(Save.pin_id, func.count(func.distinct(Save.board_id)))
+                .where(
+                    Save.board_id.in_(boards),
+                    Save.created_at <= context.as_of,
+                    Save.pin_id != context_pin_id,
+                )
+                .group_by(Save.pin_id)
+            ).all()
+        )
+        base = {
+            c.pin.id: c
+            for c in CatalogCandidateSource().retrieve(db, context)
+            if c.pin.id != context_pin_id
+        }
+        result = [
+            replace(
+                base[pin_id],
+                sources=(self.version,),
+                features=dict(base[pin_id].features, shared_public_boards=float(count)),
+                retrieval_score=float(count),
+            )
+            for pin_id, count in counts.items()
+            if pin_id in base
+        ]
+        if result:
+            return sorted(result, key=lambda c: (-c.retrieval_score, c.pin.id))
+        items = catalog_vectors(db, ClipCropEmbedder.version, context)
+        query = next((item.embedding for item in items if item.pin_id == context_pin_id), None)
+        if query is None:
+            return []
+        hits = ExactVectorRetriever().search(
+            query, [item for item in items if item.pin_id != context_pin_id], context, len(items)
+        )
+        return [
+            replace(
+                base[h.pin_id],
+                sources=("related:clip-fallback:v1",),
+                features=dict(base[h.pin_id].features, similarity=h.similarity),
+                retrieval_score=h.similarity,
+            )
+            for h in hits
+            if h.pin_id in base
+        ]
 
 
 class ClipCropEmbedder:
     version = "embedder:clip-image-crop:v1"
 
-    def embed_crop(self, crop: PreparedCrop) -> Embedding:
-        """Pinned local CLIP image inference, normalized; title-free crop query.
+    def __init__(self, settings=None):
+        self.settings = settings or Settings()
 
-        Reuse Phase 3A checkpoint/preprocessing. Image-only queries must be evaluated against
-        a declared compatible catalog recipe: image-title fusion can change retrieval quality.
-        Record actual model version/weights, crop hash/policy and runtime in experiment output.
-        Never download weights implicitly or fabricate vectors when the runtime is absent.
-        """
-        # TODO(phase4-lens-embedding): pinned image-only encoding with compatible catalog recipe.
-        raise LearningExercisePending("phase4-lens-embedding", phase="4")
+    def embed_crop(self, crop: PreparedCrop) -> Embedding:
+        return encode_image(crop.image_bytes, self.settings)
 
 
 def compare_lens_retrieval(
-    exact: list[RetrievalHit],
-    approximate: list[RetrievalHit],
-    k: int,
+    exact: list[RetrievalHit], approximate: list[RetrievalHit], k: int
 ) -> float | None:
-    """Top-k overlap / size of exact top-k, not user relevance; empty reference is None.
-
-    Reject nonpositive k and duplicate IDs; the separate evaluation report records eligible
-    corpus/version and measured latency with an elapsed clock. Never call overlap accuracy.
-    """
-    # TODO(phase4-lens-evaluation): exact/ANN agreement and reproducible latency comparison.
-    raise LearningExercisePending("phase4-lens-evaluation", phase="4")
+    if k <= 0:
+        raise ValueError("k must be positive")
+    for hits in (exact, approximate):
+        if len({hit.pin_id for hit in hits}) != len(hits):
+            raise ValueError("Duplicate pin identity")
+    reference = {hit.pin_id for hit in exact[:k]}
+    if not reference:
+        return None
+    return len(reference & {hit.pin_id for hit in approximate[:k]}) / len(reference)
 
 
 class LensService:
@@ -95,23 +170,42 @@ class LensService:
 
     def __init__(self, crop_embedder: CropEmbedder):
         self.crop_embedder = crop_embedder
+        self.retriever = PgvectorANNRetriever()
+        self.pool_size = 100
 
     def search(self, db: Session, context: FeedContext, crop: PreparedCrop) -> list[Candidate]:
-        """Encode crop, compare exact/ANN retrieval and serve eligible versioned results.
-
-        Use the same privacy/availability filter and shared served-item logging as other
-        surfaces. Do not persist an impression merely because a match was returned.
-        Bind any pagination to crop/config/model versions and carry request ID on the response.
-        """
-        # TODO(phase4-lens-serving): crop embedder/retrievers and attributed response composition.
-        raise LearningExercisePending("phase4-lens-serving", phase="4")
+        query = self.crop_embedder.embed_crop(crop)
+        base = {c.pin.id: c for c in CatalogCandidateSource().retrieve(db, context)}
+        if not base:
+            return []
+        k = min(self.pool_size, len(base))
+        if isinstance(self.retriever, ExactVectorRetriever):
+            hits = self.retriever.search(
+                query, catalog_vectors(db, query.embedder_version, context), context, k
+            )
+        else:
+            hits = self.retriever.search(db, query, context, k)
+        return [
+            replace(
+                base[h.pin_id],
+                sources=(self.version, self.retriever.version),
+                features=dict(base[h.pin_id].features, similarity=h.similarity),
+                retrieval_score=h.similarity,
+            )
+            for h in hits
+            if h.pin_id in base
+        ]
 
 
 def eligible_lens_vectors(
-    items: list[VectorItem],
-    embedder_version: str,
-    context: FeedContext,
+    items: list[VectorItem], embedder_version: str, context: FeedContext
 ) -> list[VectorItem]:
-    """Only matching-version items with available_at/known_at <= context.as_of, deduplicated."""
-    # TODO(phase4-lens-serving): duplicate rejection, version and temporal eligibility.
-    raise LearningExercisePending("phase4-lens-serving", phase="4")
+    if len({item.pin_id for item in items}) != len(items):
+        raise ValueError("Duplicate pin identity")
+    return [
+        item
+        for item in items
+        if item.embedding.embedder_version == embedder_version
+        and item.available_at <= context.as_of
+        and item.known_at <= context.as_of
+    ]

@@ -1,6 +1,6 @@
 .PHONY: up down logs check integration seed-plan seed-demo web-check browser-check phase2-exercises phase3-exercises phase3-preflight phase3b-exercises phase3b-preflight phase4-exercises phase4-preflight mind-fixture
 
-up:
+up: lens-prepare
 	docker compose up --build -d --wait
 
 down:
@@ -17,7 +17,7 @@ check:
 integration:
 	RUN_INTEGRATION=1 uv run --locked pytest -m integration
 
-# Expected to fail at TODOs until the learning core is implemented. Requires the stack.
+# Shared Phase 2 core acceptance; requires the local stack.
 phase2-exercises:
 	RUN_PHASE2_EXERCISES=1 RUN_INTEGRATION=1 uv run --locked pytest -m phase2_exercise
 
@@ -54,3 +54,12 @@ web-check:
 
 browser-check:
 	@result=0; (cd frontend && npm run test:e2e) || result=$$?; uv run --locked python -m scripts.cleanup_browser_tests || exit $$?; exit $$result
+
+lens-prepare:
+	uv run --locked python -m scripts.prepare_lens
+
+lens-backfill:
+	uv run --locked python -m scripts.backfill_lens
+
+lens-evaluate:
+	uv run --locked python -m scripts.evaluate_lens

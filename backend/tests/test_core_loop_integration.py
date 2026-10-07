@@ -32,9 +32,9 @@ pytestmark = [
 ]
 
 
-def png_bytes():
+def png_bytes(color="#507c44"):
     stream = io.BytesIO()
-    Image.new("RGB", (1800, 900), "#507c44").save(stream, "PNG")
+    Image.new("RGB", (1800, 900), color).save(stream, "PNG")
     return stream.getvalue()
 
 
@@ -293,7 +293,7 @@ def test_catalog_paginates_without_duplicates(clients):
         response = owner.post(
             "/api/pins",
             data={"title": f"Pagination {index}"},
-            files={"image": ("test.png", png_bytes(), "image/png")},
+            files={"image": ("test.png", png_bytes(f"#{index + 1:02x}7c44"), "image/png")},
         )
         ids.append(response.json()["id"])
     for pin_id in ids:

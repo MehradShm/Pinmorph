@@ -83,3 +83,15 @@ To inspect the preserved Phase 3B tooling, use `git worktree add --detach
 ../pinterest-lite-phase-3b-scaffold phase-3b-scaffold`. This is a recipe; that worktree has
 not been created. Phase 4 adds migration `d12ac1433a55`; use isolated state to run old code.
 The Phase 3B tag preserves incomplete CTR/adapter work, not a completed ML/operations track.
+
+## Phase 4 implementation checkpoint
+
+`phase-4` is the working branch; `phase-4` is also the completion tag for the implemented
+product/Lens checkpoint. It includes migration `4f1a7b239abc`, completed shared serving/events,
+local CLIP and Mailpit services. Earlier scaffold tags remain historical references.
+Use a separate worktree plus its own Compose project, ports, volumes and bucket to run an
+older phase; Git preserves code, not database/Redis/object-storage/model state.
+
+The Phase 4 runtime needs ignored model weights (`make lens-prepare`) and explicit catalog
+backfill (`make lens-backfill`) for an existing dataset. The original Phase 1 state and
+stopped simulator-lab state are preserved separately. See PHASE4.md for the current app.

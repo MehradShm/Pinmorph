@@ -1,47 +1,80 @@
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.feed.contracts import Candidate, FeedContext, RankedCandidate
-from app.learning import LearningExercisePending
+from app.logging.models import Engagement
+from app.models import ImportedInteraction, Pin, User
+from app.social.policy import visible_owner
 
 
 class CatalogCandidateSource:
     version = "candidate:catalog:v1"
 
     def retrieve(self, db: Session, context: FeedContext) -> list[Candidate]:
-        """Eligible ready pins and point-in-time baseline features.
+        viewer = db.get(User, context.user_id)
+        pins = db.scalars(
+            select(Pin).where(
+                Pin.status == "ready",
+                Pin.available_at <= context.as_of,
+                Pin.created_at <= context.as_of,
+                visible_owner(Pin.owner_id, viewer, include_muted=True),
+            )
+        ).all()
+        from app.product.models import HiddenPin
 
-        features: age_hours (since available_at), observed_save_count, imported_purchase_count.
-        Observed saves come from accepted save engagements, deduplicated by user/pin;
-        imported purchases remain separate, deduplicated by user/pin. Both occurrence and
-        receipt must be strictly before as_of. Mutable board membership is not history.
-        Require status ready, available_at <= as_of, and created_at <= as_of; imported
-        backdated availability must not make a pin known before it was actually imported.
-        V1 retrieves all eligible items at the small demo scale; no premature top-N cutoff.
-        """
-        # TODO(phase2-candidates): query eligible pins and time-correct separate counts.
-        raise LearningExercisePending("phase2-candidates")
+        hidden = set(
+            db.scalars(select(HiddenPin.pin_id).where(HiddenPin.user_id == context.user_id))
+        )
+
+        def counts(model, extra=()):
+            return dict(
+                db.execute(
+                    select(model.pin_id, func.count(func.distinct(model.user_id)))
+                    .where(
+                        model.event_time < context.as_of,
+                        model.received_at < context.as_of,
+                        *extra,
+                    )
+                    .group_by(model.pin_id)
+                ).all()
+            )
+
+        saves = counts(Engagement, (Engagement.type == "save",))
+        purchases = counts(ImportedInteraction)
+        return [
+            Candidate(
+                pin,
+                (self.version,),
+                {
+                    "age_hours": max(0, (context.as_of - pin.available_at).total_seconds() / 3600),
+                    "observed_save_count": saves.get(pin.id, 0),
+                    "imported_purchase_count": purchases.get(pin.id, 0),
+                },
+            )
+            for pin in pins
+            if pin.id not in hidden
+        ]
 
 
 class RecencyRanker:
     version = "ranker:recency:v1"
 
     def rank(self, candidates: list[Candidate], context: FeedContext) -> list[RankedCandidate]:
-        """Score = -age_hours; sort descending score then ascending pin ID for ties."""
-        # TODO(phase2-ranking): pure deterministic ranking; exclude display position.
-        raise LearningExercisePending("phase2-ranking")
+        ordered = sorted(candidates, key=lambda c: (c.features["age_hours"], c.pin.id))
+        return [
+            RankedCandidate(c, -c.features["age_hours"], -c.features["age_hours"]) for c in ordered
+        ]
 
 
 class PopularityRanker:
     version = "ranker:popularity:v1"
 
     def rank(self, candidates: list[Candidate], context: FeedContext) -> list[RankedCandidate]:
-        """Score = observed_save_count + imported_purchase_count.
+        def score(c):
+            return c.features["observed_save_count"] + c.features["imported_purchase_count"]
 
-        Equal weight is an explicit proxy baseline, not CTR. Tie-break by newest item
-        (smallest age_hours), then ascending pin ID; all-zero history falls back to recency.
-        """
-        # TODO(phase2-ranking): keep the separate provenance features in the snapshot.
-        raise LearningExercisePending("phase2-ranking")
+        ordered = sorted(candidates, key=lambda c: (-score(c), c.features["age_hours"], c.pin.id))
+        return [RankedCandidate(c, score(c), score(c)) for c in ordered]
 
 
 class IdentityReranker:

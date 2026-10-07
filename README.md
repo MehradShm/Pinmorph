@@ -10,20 +10,15 @@ asynchronously by the RQ worker. The H&M importer accepts local dataset files; a
 clearly labeled synthetic catalog lets you try the app immediately. Ranking, impression
 logging, ML libraries, and MLflow arrive in their later phases.
 
-Phase 2 has started with versioned feed interfaces, experiment configuration, serving/event
-tables, validated API contracts, and learning targets. Its core ranking/ingestion/assignment
-logic remains marked exercises under the learning agreement; new `/api/feed` and `/api/events`
-calls return 503 until implemented. The UI still runs the Phase 1 loop. See
-[docs/PHASE2.md](docs/PHASE2.md) for the implementation guide and remaining acceptance work.
-The local `phase-1` tag preserves the previous version; [milestone instructions](docs/MILESTONES.md)
-explain how to revisit it with isolated application state.
+The current Phase 4 checkpoint implements shared baseline feeds and event attribution,
+Following/related discovery, CLIP Lens, optional interest onboarding, profile/board extras,
+URL image import, engagement, local digests and safety review. See [docs/PHASE4.md](docs/PHASE4.md).
 
-Phase 3A has started on `phase-3a`: embedding/history/retrieval/training contracts, versioned
-pgvector storage, validated training manifests, checksummed JSON ranker artifacts, preflight
-inventory, and core ML learning targets. The ML algorithms and Phase 2 core remain pending;
-there is no trained or personalized feed yet. See [docs/PHASE3A.md](docs/PHASE3A.md).
-`make phase3-preflight` shows prerequisites and `make phase3-exercises` opts into the core
-targets. Phase 2's current work is preserved under the explicit `phase-2-scaffold` tag.
+Historical `phase-2-scaffold`, `phase-3a-scaffold` and `phase-3b-scaffold` tags preserve the
+learning skeletons. The remaining Phase 3A training/personalized-ranker and separate Phase
+3B CTR algorithms still have their own exercises; a trained personalized home ranker is not
+claimed by this checkpoint. [Milestone instructions](docs/MILESTONES.md) explain how to run
+older code with isolated application state.
 
 ## Start the stack
 
@@ -216,22 +211,23 @@ environment generation, guarded initial baseline seeding and authenticated obser
 The minimum simulator run/traffic adapter and reset remain unsupported; capability discovery
 advertises only diagnostics. Simulation/workload generation remains a separate project.
 
-## Phase 4 — first product extensions
+## Phase 4 — completed product extensions and Lens
 
-Phase 4 has started on `phase-4` with keyword search/typeahead, public profiles, user and
-board follows, blocks/mutes, secret boards/sections and in-app follow activity. The UI
-exposes these at http://localhost:8080. Existing boards stay secret unless explicitly
-published; secret membership does not make uploaded pins private. Search returns a request
-ID/backend version; Phase 2 served-item/impression attribution remains pending.
+Phase 4 now includes Following and public related feeds, pinned local CLIP crop search,
+interest onboarding/settings, direct-image URL import, comments/likes/share/hide/report,
+local SMTP digests, moderation, upload holds and exact-pixel duplicate detection, alongside
+search/profiles/follows/private boards/sections. Shared serving, assignment, baseline rankers
+and retry-safe event ingestion are implemented; served and viewport-viewed records remain
+separate. Independent Phase 3A training and Phase 3B CTR exercises remain separate work.
 
-[docs/PHASE4.md](docs/PHASE4.md) documents implementation, APIs and the remaining scope.
-Following/related/Lens algorithms are typed learning exercises, not working recommendations.
-`make phase4-preflight` inventories them; `make phase4-exercises` opts into pending targets.
-Other Phase 4 modules remain on the roadmap. `phase-3b-scaffold` preserves the previous code.
+`make up` explicitly prepares hash-verified local CLIP weights and starts the app plus CPU
+encoder and Mailpit. For an existing catalog, run `make lens-backfill`. Try the app at
+http://localhost:8080 and inspect local email at http://localhost:8025.
+`make lens-evaluate` records a real exact/HNSW comparison; the 32-pin/16-query checkpoint
+has mean top-10 overlap 1.0 and records timing limits without claiming user relevance.
 
-## Upstream implementation references
-
-- [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/): install from the lockfile in the image.
-- [pgvector](https://github.com/pgvector/pgvector): PostgreSQL extension and container tags.
-- [RQ workers](https://python-rq.org/docs/workers/): process execution and JSON serialization.
-- [MinIO release](https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z): pinned source build. The community repository is archived; retaining it for this local learning stack is recorded in the decision log, with an S3-compatible replacement as a revisit choice.
+See [PHASE4.md](docs/PHASE4.md) for modules, routes, configuration and validation;
+[PHASE4_WALKTHROUGH.md](docs/PHASE4_WALKTHROUGH.md) explains the core statement by statement.
+`make phase4-preflight` is a static inventory, while `make check`, `make integration` and
+`make browser-check` run acceptance checks. Earlier checkpoints retain their local tags;
+use isolated volumes/schema state when comparing them (see docs/MILESTONES.md).
