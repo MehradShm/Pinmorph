@@ -1,0 +1,14 @@
+.git
+.DS_Store
+.env
+.venv
+.tools
+.uv-cache
+**/__pycache__
+.pytest_cache
+.ruff_cache
+.coverage
+data
+mlruns
+node_modules
+frontend
