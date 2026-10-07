@@ -1,6 +1,8 @@
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.experiments.config import FeedConfig
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -15,6 +17,7 @@ class Settings(BaseSettings):
     s3_bucket: str = "pinmorph-media"
     log_level: str = "INFO"
     sim_mode: bool = False
+    feed_config: FeedConfig = Field(default_factory=FeedConfig)
     health_timeout_seconds: float = Field(default=2.0, gt=0, le=10)
     upload_max_bytes: int = 12 * 1024 * 1024
     image_max_pixels: int = 24_000_000

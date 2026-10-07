@@ -17,7 +17,7 @@ def check_postgres(engine) -> None:
         connection.execute(text("SET LOCAL statement_timeout = 2000"))
         connection.execute(text("SELECT 1"))
         # Update alongside schema migrations: an older schema is not ready to serve this API.
-        if connection.scalar(text("SELECT version_num FROM alembic_version")) != "59970f5b8481":
+        if connection.scalar(text("SELECT version_num FROM alembic_version")) != "ddac47bcc846":
             raise RuntimeError("Database schema does not match this application version")
         if not connection.scalar(
             text("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')")

@@ -1,0 +1,60 @@
+# Revisiting an earlier phase
+
+The repository now has a `main` branch, an annotated `phase-1` tag, and a working `phase-2`
+branch. The Phase 1 tag is the validated core loop; its tag message explicitly records that
+the developer's real H&M import is still pending. There is no separate Phase 0 snapshot.
+Everything is local; no GitHub remote has been configured or published.
+
+Use an immutable tag for each accepted milestone, and branches for ongoing work. A worktree
+lets you open an older version beside the current version without switching the active code.
+Git saves code and lockfiles. Database rows, Redis queues, MinIO objects, `.env`, and imported
+dataset files are external state; a tag alone cannot restore them.
+
+## Open Phase 1 in a separate worktree
+
+From the current `pinterest-lite` directory:
+
+```bash
+git worktree add --detach ../pinterest-lite-phase-1 phase-1
+```
+
+For edits to the historical version, create a new branch in that worktree rather than move
+the tag. Do not point its migrations at the current phase's database.
+
+## Run Phase 1 beside Phase 2
+
+The provided override gives the original Phase 1 Compose file separate application/web
+image tags. `-p pinmorph-phase1` gives it separate named volumes and network. The example
+environment uses separate host ports. The pinned MinIO image can be shared; its objects
+are isolated in the separate project's volume.
+
+After creating the worktree, run from `pinterest-lite-phase-1`:
+
+```bash
+docker compose -p pinmorph-phase1 \
+  --env-file ../pinterest-lite/infra/milestones/phase-1.env.example \
+  -f compose.yaml -f ../pinterest-lite/infra/milestones/phase-1.compose.yaml \
+  up --build -d --wait
+```
+
+Seed that environment through its own API container:
+
+```bash
+docker compose -p pinmorph-phase1 \
+  --env-file ../pinterest-lite/infra/milestones/phase-1.env.example \
+  -f compose.yaml -f ../pinterest-lite/infra/milestones/phase-1.compose.yaml \
+  exec api python -m scripts.seed --demo --reference-time 2026-10-07T00:00:00Z --wait 120
+```
+
+Open Phase 1 at **http://127.0.0.1:8081**; keep the current app at **http://localhost:8080**.
+Cookies are scoped to host rather than port, so these different hostnames keep the two
+login sessions apart. Historical API docs are at http://127.0.0.1:8001/docs.
+
+Use the same Compose flags with `down` to stop only this historical stack. Keep its named
+volumes to resume later. Host-run Python commands need matching historical connection URLs;
+the commands above run inside the correct container and avoid accidentally using Phase 2's
+local `.env`. This reconstructs a demo baseline, not a backup of earlier user activity.
+
+Validation: the override's merged configuration is checked against the actual `phase-1`
+worktree. Running two stacks concurrently is an optional exercise, not a claim that both
+have been started on this machine.

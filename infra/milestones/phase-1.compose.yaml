@@ -1,0 +1,17 @@
+# Apply over the archived Phase 1 compose.yaml; isolate app image tags as well as volumes.
+x-phase1-app: &phase1-app
+  image: pinmorph-app:phase1
+
+services:
+  api:
+    <<: *phase1-app
+  worker:
+    <<: *phase1-app
+  migrate:
+    <<: *phase1-app
+  init-storage:
+    <<: *phase1-app
+  web:
+    image: pinmorph-web:phase1
+  checks:
+    image: pinmorph-checks:phase1

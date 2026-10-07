@@ -14,7 +14,11 @@ from rq.serializers import JSONSerializer
 from app.api import router
 from app.config import Settings
 from app.database import make_engine
+from app.feed.api import router as feed_router
+from app.feed.service import FeedService
 from app.health import check_dependencies, check_postgres
+from app.learning import LearningExercisePending
+from app.logging.service import EventIngestor
 from app.storage import make_s3_client
 
 logger = logging.getLogger("pinmorph.requests")
@@ -26,6 +30,8 @@ def create_app(
     health_checks: dict[str, Callable[[], object]] | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
+    # Validate versioned configuration before the application starts accepting requests.
+    feed_service = FeedService(settings.feed_config)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
@@ -38,6 +44,8 @@ def create_app(
         )
         storage = make_s3_client(settings)
         application.state.settings = settings
+        application.state.feed_service = feed_service
+        application.state.event_ingestor = EventIngestor()
         application.state.engine = engine
         application.state.storage = storage
         application.state.queue = Queue("default", connection=redis, serializer=JSONSerializer)
@@ -59,6 +67,18 @@ def create_app(
 
     application = FastAPI(title="Pinmorph", version="0.1.0", lifespan=lifespan)
     application.include_router(router)
+    application.include_router(feed_router)
+
+    @application.exception_handler(LearningExercisePending)
+    async def pending_exercise(request: Request, exc: LearningExercisePending):
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "Phase 2 learning implementation is pending",
+                "exercise": exc.exercise,
+                "request_id": request.state.request_id,
+            },
+        )
 
     @application.middleware("http")
     async def request_diagnostics(request: Request, call_next):

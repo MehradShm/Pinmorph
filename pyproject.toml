@@ -33,7 +33,10 @@ packages = ["backend/app", "scripts"]
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 addopts = "-ra"
-markers = ["integration: requires running Postgres, Redis, MinIO, and an RQ worker"]
+markers = [
+    "integration: requires running Postgres, Redis, MinIO, and an RQ worker",
+    "phase2_exercise: opt-in acceptance targets for the developer's Phase 2 learning core",
+]
 
 [tool.ruff]
 target-version = "py312"

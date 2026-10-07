@@ -3,6 +3,7 @@ from alembic import context
 from app import models  # noqa: F401 -- register product tables with Alembic
 from app.config import Settings
 from app.database import Base, make_engine
+from app.logging import models as logging_models  # noqa: F401 -- register Phase 2 tables
 
 target_metadata = Base.metadata
 

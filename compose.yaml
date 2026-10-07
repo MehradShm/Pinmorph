@@ -1,7 +1,7 @@
 name: pinmorph
 
 x-app: &app
-  image: pinmorph-app:local
+  image: ${APP_IMAGE:-pinmorph-app:local}
   build:
     context: .
     target: base
@@ -13,6 +13,7 @@ x-app: &app
     S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-pinmorph-local-storage}
     S3_BUCKET: ${S3_BUCKET:-pinmorph-media}
     LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    FEED_CONFIG: '${FEED_CONFIG:-{}}'
     SIM_MODE: "false"
     COOKIE_SECURE: ${COOKIE_SECURE:-false}
     TRUSTED_ORIGINS: '${TRUSTED_ORIGINS:-["http://localhost:8080","http://127.0.0.1:8080","http://localhost:5173","http://127.0.0.1:5173"]}'
@@ -110,7 +111,7 @@ services:
         condition: service_healthy
 
   web:
-    image: pinmorph-web:local
+    image: ${WEB_IMAGE:-pinmorph-web:local}
     build: ./frontend
     ports:
       - "127.0.0.1:${WEB_PORT:-8080}:80"
@@ -125,7 +126,7 @@ services:
 
   checks:
     <<: *app
-    image: pinmorph-checks:local
+    image: ${CHECKS_IMAGE:-pinmorph-checks:local}
     build:
       context: .
       target: checks

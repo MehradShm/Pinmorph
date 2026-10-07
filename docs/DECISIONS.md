@@ -125,3 +125,27 @@ what would make us revisit it. These entries double as interview prep notes.
 - **Why:** the planned functional UI supports the learning loop; browser checks verify cookies, multipart upload, dialogs, media delivery, and persistence beyond API-level tests.
 - **Alternatives:** frontend/backend cross-origin hosting; a UI framework before core paths exist; API-only validation.
 - **Revisit if:** richer routing/accessibility or deployment needs arise. Browser mobile profiles emulate viewports, not a real mobile device. The installed Node 20.1 builds Vite but cannot load current Playwright's TypeScript configuration; validation used a temporary Node 22 runtime. [Vite 6 guide](https://v6.vite.dev/guide/), [Playwright installation](https://playwright.dev/docs/intro), [RQ retry/scheduler requirement](https://python-rq.org/docs/exceptions/).
+
+## 2026-10-07 · Preserve historical code separately from application state
+- **Decision:** initialize local Git, keep Phase 1 as an annotated `phase-1` tag, and work on `phase-2`. Provide worktree instructions and a historical Compose override with separate project volumes/network, host ports, and app/web image tags. Keep data and secrets outside Git.
+- **Why:** the developer can inspect an earlier phase while later phases evolve. Code tags do not restore database schemas, queues, or media. The historical tag explicitly retains the pending real H&M acceptance item.
+- **Alternatives:** moving checkpoint branches; switching current code while sharing one database; committing generated data or environment secrets.
+- **Revisit if:** measured experiments require full state snapshots. Rebuilding a seeded demo baseline is sufficient for historical product inspection; no Phase 0 snapshot was reconstructed and no GitHub remote was published.
+
+## 2026-10-07 · Scaffold the Phase 2 learning path before implementing its core
+- **Decision:** implement data schemas/migration, versioned contracts/registries/config, strict payload validation, API wiring, inspection, and opt-in executable targets. Preserve Learn mode for assignment, ranking, features, serving persistence, and event ingestion. Pending services explicitly return 503; the UI continues the Phase 1 path.
+- **Why:** WORKING_AGREEMENT.md leaves core ML/logging/experiment logic to the developer unless they ask for it to be written. Ordinary scaffold checks must not imply that view attribution or retries work end to end.
+- **Alternatives:** silently write the learning core; return stub success; disable tests without documenting acceptance targets.
+- **Revisit if:** the developer explicitly requests core implementation; then implement and walk through it as the agreement allows.
+
+## 2026-10-07 · Design transactional serving records and a global event ledger
+- **Decision:** use Postgres for atomic serving snapshots and event receipts; give impressions unique served-item identity and composite attribution constraints. Keep requested versus resolved impression IDs separate for out-of-order actions. Retain the original normalized event payload for exact retries and duplicate-view aliases. Use server UTC for normal traffic; reject simulator time/run overrides until the adapter exists.
+- **Why:** request attribution, concurrency, retries, and delayed events need explicit identities and transaction boundaries. Returning an item is distinct from viewing it, and imported proxies stay separate from observed actions.
+- **Alternatives:** fire-and-forget access logs; event IDs unique only per type; serving-generated impressions; a queue/log bus from the start.
+- **Revisit if:** ingestion throughput requires an event bus, label materialization introduces lateness policies, or run-scoped logical time is implemented. This entry describes the schema/contract; ingestion and request-persistence core logic remain exercises.
+
+## 2026-10-07 · Specify an honest baseline comparison and stable experiment algorithm
+- **Decision:** recency score = negative age in hours; popularity score = distinct prior saving users plus distinct prior purchasing users, each provenance separately snapshotted and equally weighted. Occurrence and receipt must both precede the feature cutoff. All-zero popularity falls back to recency. Stable assignment uses the documented SHA-256 JSON/byte/bucket algorithm with golden vectors, versioned salt and complete arm allocations.
+- **Why:** deterministic, inspectable baselines make later model experiments comparable. Purchase proxies are not observed CTR, and information arriving late cannot be used earlier. V1 full-catalog retrieval is explicit at demo scale.
+- **Alternatives:** popularity from current board membership; silently merge purchases and observed saves; process-dependent hashes; bounded retrieval before coverage is measured.
+- **Revisit if:** scale motivates SQL shortlists, different source weights, or personalized models. These algorithms remain marked core exercises until implemented and reviewed.

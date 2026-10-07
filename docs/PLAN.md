@@ -241,7 +241,7 @@ the core ML logic the developer intends to learn.
 
 | Checkpoint | Baseline or invariant | Explain-back outcome |
 |---|---|---|
-| Logging and labels | A small known request/view/action fixture, including retries and unseen items | Explain attribution, idempotency, and when an example becomes a negative |
+| Logging and labels | A small known request/view/action fixture, including retries and unseen items | Pending: Phase 2 scaffold and opt-in targets are ready; explain attribution, idempotency, and when an example becomes a negative after implementing the core |
 | Embeddings and retrieval | Popularity/recency; exact similarity on a small subset to check ANN recall | Explain user history cutoff, cold start, and retrieval accuracy versus latency |
 | Engagement ranker | Unranked candidate blend or similarity ordering, evaluated on the same candidates | Explain sampled negatives, point-in-time features, and ranking versus CTR |
 | Reranker | Same ranked list without reranking | Explain duplicate removal, creator concentration, diversity, and relevance tradeoffs |

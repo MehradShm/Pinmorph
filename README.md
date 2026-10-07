@@ -10,6 +10,14 @@ asynchronously by the RQ worker. The H&M importer accepts local dataset files; a
 clearly labeled synthetic catalog lets you try the app immediately. Ranking, impression
 logging, ML libraries, and MLflow arrive in their later phases.
 
+Phase 2 has started with versioned feed interfaces, experiment configuration, serving/event
+tables, validated API contracts, and learning targets. Its core ranking/ingestion/assignment
+logic remains marked exercises under the learning agreement; new `/api/feed` and `/api/events`
+calls return 503 until implemented. The UI still runs the Phase 1 loop. See
+[docs/PHASE2.md](docs/PHASE2.md) for the implementation guide and remaining acceptance work.
+The local `phase-1` tag preserves the previous version; [milestone instructions](docs/MILESTONES.md)
+explain how to revisit it with isolated application state.
+
 ## Start the stack
 
 Install and start [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/)
