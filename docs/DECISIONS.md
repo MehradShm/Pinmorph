@@ -173,3 +173,27 @@ what would make us revisit it. These entries double as interview prep notes.
 - **Why:** serving must use the same feature order/transform as training, and model experiments need attributable, pinned artifacts. Empty history, ties, late events, unknown creators and sampled-unobserved labels need explicit correctness targets before evaluating quality.
 - **Alternatives:** opaque mutable pickle artifacts; fit transforms during serving; fabricate scores/metrics for a demo; treat removed TODOs as proof of acceptance.
 - **Revisit if:** LightGBM/neural models need a different artifact format, or MLflow-backed model rollout is implemented. Artifact tooling does not imply that a model has been trained or activated.
+
+## 2026-10-07 · Keep the MIND CTR study independent of the app's proxy task
+- **Decision:** separate `app/ctr` contracts, local TSV reader, manifest and four-feature logistic artifact; preserve every observed displayed label and impression group. Keep splitting, features, example construction, fitting, scoring and metrics as named Learn-mode exercises. Compare against the training-period constant click rate before trying a tree model.
+- **Why:** app proxy positives/sampled negatives and MIND source click labels define different tasks. Shuffled candidate order is not display position, and hidden public-test labels cannot become zeros. Infrastructure checks and invented fixtures do not establish model quality.
+- **Alternatives:** reuse the app implicit-feedback artifact; subsample nonclicks without changing calibration/evaluation policy; split candidate rows randomly.
+- **Revisit if:** actual model fitting/real-data comparison is complete, or explicit sampling, content encoders, or calibration experiments are added. [Official source format](https://github.com/msnews/msnews.github.io/blob/master/assets/doc/introduction.md).
+
+## 2026-10-07 · Declare source-time assumptions and preserve partition history
+- **Decision:** require an explicit IANA source zone, record it as an assumption, reject DST ambiguity/nonexistent times, namespace impressions by source partition, and preserve provided pre-impression history. Report missing history metadata without filling it from later partitions. Inventory records hashes and detects changed inputs; it does not fit anything.
+- **Why:** MIND timestamp strings have no offset and source history entries have no individual timestamps. Guessing receipt times, decay, article publication age or chronological order would create unsupported features and leakage assumptions.
+- **Alternatives:** silently assume local/UTC time; pool train/dev history into a mutable per-user lookup; infer labels or prior history from current/future clicks.
+- **Revisit if:** authoritative source-zone or richer history/publication metadata is supplied. Whole-group time cutoffs and a protected final period remain required.
+
+## 2026-10-07 · Expose read-only operation evidence before advertising simulator traffic
+- **Decision:** process-local request counters/cumulative latency buckets use route templates and status classes. Control-authenticated diagnostics report database counts, queue-head age and worker heartbeats, with partial failures and bounded sampling. Read worker hashes and registry cardinality without RQ cleanup side effects. Capabilities advertise diagnostics only; unsupported controls return 501, normal-mode controls return 404, and normal APIs reject simulation headers.
+- **Why:** the earlier feed/event core and run/job attribution are unfinished. Operational telemetry can work now without pretending a scenario, reset, CTR result or personalized feed has run. RQ convenience reads can mutate stale registrations/registries.
+- **Alternatives:** return stub successes; advertise the contract's example capabilities; unbounded item/user metric labels; assume local histograms are persisted per-run measurements.
+- **Revisit if:** a measured workload requires persistent multi-process metrics, richer ingestion/freshness telemetry, or a completed adapter with active-run attribution. Related backlog: backpressure, retries and feature freshness.
+
+## 2026-10-07 · Prepare an isolated baseline without conflating initial seed and reset
+- **Decision:** preserve `phase-3a-scaffold` and work on `phase-3b`. Generate private disposable environment/config files and a checksummed baseline descriptor outside named stores. A separate Compose project uses distinct ports/application images/volumes/network and mounts the descriptor read-only. Initial seed verifies environment/config/hash and delegates to the existing importer/media jobs; observation export verifies loopback environment identity and publishes immutable evidence. Minimum run adapter/reset remains pending.
+- **Why:** the developer can rehearse infrastructure operation while earlier learning core is unfinished. Resuming an importer does not quiesce old jobs, restore all state, close a run or preserve a reset receipt. No destructive reset is exposed without those guarantees.
+- **Alternatives:** share development stores; overwrite the baseline on each attempt; call reseeding a reset; embed workload/fault orchestration in this product.
+- **Revisit if:** Phase 2 acceptance permits the minimum adapter. Reset needs durable run/receipt records outside application state, a worker write barrier and interrupted-retry acceptance; logical time/model/snapshot controls remain later extensions.

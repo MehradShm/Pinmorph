@@ -1,4 +1,4 @@
-.PHONY: up down logs check integration seed-plan seed-demo web-check browser-check phase2-exercises phase3-exercises phase3-preflight
+.PHONY: up down logs check integration seed-plan seed-demo web-check browser-check phase2-exercises phase3-exercises phase3-preflight phase3b-exercises phase3b-preflight mind-fixture
 
 up:
 	docker compose up --build -d --wait
@@ -23,6 +23,15 @@ phase2-exercises:
 
 phase3-exercises:
 	RUN_PHASE3_EXERCISES=1 uv run --locked pytest -m phase3_exercise
+
+phase3b-exercises:
+	RUN_PHASE3B_EXERCISES=1 uv run --locked pytest -m phase3b_exercise
+
+phase3b-preflight:
+	uv run --locked python -m scripts.phase3b_preflight
+
+mind-fixture:
+	uv run --locked python -m scripts.inspect_mind --dataset-dir backend/tests/fixtures/mind_synthetic --partition fixture --source-timezone UTC --provenance synthetic_fixture
 
 # Read-only inventory; add --database to the Python command to inspect the running stack.
 phase3-preflight:

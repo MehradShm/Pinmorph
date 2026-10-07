@@ -192,3 +192,56 @@ remain pending. Pure fixture exercises can proceed before the complete serving p
 PHASE3A.md records the twelve exercise groups, component flow, alternatives and explain-back
 questions. Explain-back and baseline comparison outcomes remain pending; the separate simulator
 and Phase 3B CTR/operations track are not implemented by this scaffold.
+
+## Phase 3B — started; CTR core and minimum adapter pending
+
+Implemented on 2026-10-07:
+
+- Preserved `phase-3a-scaffold` annotated checkpoint and active `phase-3b` branch;
+  no Phase 3A/3B completion tag and no remote publication.
+- Independent MIND CTR contracts, source-time/provenance manifest and four-feature artifact
+  format. Shared immutable byte publication preserves separate app/CTR model schemas.
+- Strict local news/behavior TSV reader and read-only inventory, including whole impression
+  identity, observed/hidden labels, source-partition namespaces, explicit time-zone assumption,
+  input hashes/change detection, empty history and missing-history metadata counts.
+- Seven explicit CTR exercise groups and fifteen opt-in known-answer targets. Core algorithms
+  raise Phase 3B LearningExercisePending; no model or quality report is fabricated.
+- Thread-safe process request/status counters and cumulative latency buckets with route
+  templates; read-only DB/queue/worker diagnostics with explicit partial failure.
+- Disposable-mode/control-authenticated `/sim/capabilities` and `/sim/diagnostics`. Only
+  diagnostics are advertised; unsupported controls return 501, normal-mode controls 404.
+  Normal `/api` routes reject all X-Sim-* headers until attribution exists.
+- Private immutable disposable environment files, baseline descriptor/run payload schema,
+  separate Compose setup/read-only baseline mount, guarded initial baseline seed and
+  authenticated loopback observation export. Initial seed is explicitly not reset.
+- Phase 3B guide, operations exercise worksheet, decision records and commands; Phase 3B
+  TODOs excluded from the independent Phase 3A prerequisite inventory.
+
+Validation on 2026-10-07:
+
+- Unit checks: 77 passed (45 existing plus 32 CTR/diagnostics/control/setup/export checks).
+- Real-service checks: 25 passed (24 existing plus read-only DB/worker diagnostics).
+- Browser regression: 4 passed on desktop/mobile; exact recorded disposable accounts
+  and media cleaned afterward.
+- Fifteen opt-in CTR targets fail at their named pending exercises; these are unfinished
+  acceptance targets, not passing CTR fitting/evaluation checks.
+- Synthetic fixture inventory: four news articles, four groups, eight displayed candidates,
+  three clicks/five nonclicks; empty history, tied timestamps and missing history metadata.
+- Disposable merged Compose config verifies separate project, all three stores, ports,
+  app/web image names and read-only baseline mount. Both stacks started healthy.
+- Initialized declared `pinmorph-sim-lab` baseline via normal media jobs: 32 ready demo pins,
+  zero queued jobs, worker heartbeat present. Real control auth and unsupported reset/run
+  header behavior verified. No scenario run, reset or operational diagnosis is claimed.
+- Observation exported locally to `data/simulator/observations/baseline.json`; private setup
+  and baseline files at `data/simulator/pinmorph-sim-lab`. All are ignored by Git.
+- Final guarded seed retry preserved the same 32-pin import without new jobs; its ID is
+  explicitly import_run_id. Final evidence is at `data/simulator/observations/final-baseline.json`.
+  The disposable validation stack was stopped retaining its volumes/control/evidence files.
+- Normal app refreshed and healthy; simulation controls disabled. No schema migration or
+  ML runtime install/download was needed.
+
+Remaining: actual MIND files and pinned sklearn/MLflow runtime; all CTR core algorithms,
+reproducible baseline/held-out quality comparison and explain-back. The minimum simulator
+run/users/catalog/recommendations/events adapter, mutation/job attribution and quiescent
+baseline reset remain pending on earlier services. Logical time, snapshot/model/train
+controls are unsupported. The separate simulator is not built here. Phase 4 has not started.

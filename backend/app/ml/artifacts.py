@@ -1,13 +1,12 @@
 """Inspectable JSON ranker artifacts: ordered inputs, train-only scaling, and provenance."""
 
 import hashlib
-import os
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import Literal
 
 from pydantic import AwareDatetime, Field, FiniteFloat, model_validator
 
+from app.artifact_io import publish_bytes, verified_bytes
 from app.ml.config import FEATURE_NAMES, TrainingManifest
 from app.ml.contracts import Record
 
@@ -46,25 +45,9 @@ def artifact_digest(artifact: RankerArtifact) -> str:
 
 def save_artifact(path: Path, artifact: RankerArtifact) -> str:
     """Publish complete bytes without overwriting an existing artifact, even under a race."""
-    payload = artifact_bytes(artifact)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = None
-    try:
-        with NamedTemporaryFile(dir=path.parent, prefix=".ranker-", delete=False) as stream:
-            temporary = Path(stream.name)
-            stream.write(payload)
-            stream.flush()
-            os.fsync(stream.fileno())
-        # Same-directory hard link publishes atomically and rejects existing destinations.
-        os.link(temporary, path)
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
-    return hashlib.sha256(payload).hexdigest()
+    return publish_bytes(path, artifact_bytes(artifact))
 
 
 def load_artifact(path: Path, expected_sha256: str) -> RankerArtifact:
-    payload = path.read_bytes()
-    if hashlib.sha256(payload).hexdigest() != expected_sha256:
-        raise ValueError("Ranker artifact checksum does not match the pinned version")
+    payload = verified_bytes(path, expected_sha256)
     return RankerArtifact.model_validate_json(payload)

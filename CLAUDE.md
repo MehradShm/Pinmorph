@@ -42,6 +42,8 @@ product features, the separate MIND CTR study, and simulator exercises follow th
 - Frontend build: `make web-check`; desktop/mobile browser checks: `make browser-check`
 - Phase 3A prerequisite inventory: `make phase3-preflight`; core learning targets:
   `make phase3-exercises` (expected to fail at TODOs until implemented); see docs/PHASE3A.md
+- Phase 3B MIND fixture: `make mind-fixture`; prerequisite inventory: `make phase3b-preflight`;
+  opt-in CTR targets: `make phase3b-exercises`; see docs/PHASE3B.md for disposable setup.
 - Setup and container-only checks: see README.md
 
 ## Non-negotiable conventions

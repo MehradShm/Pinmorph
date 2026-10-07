@@ -11,6 +11,17 @@ adapter. The adapter maps this contract onto normal application services and end
 Paths below are suggestions. Load generation, session policy, and fault orchestration live
 in the simulator; instrumentation and the application adapter live in the product repo.
 
+### Current implementation checkpoint (2026-10-07)
+
+Phase 3B implements control-authorized capability discovery and read-only diagnostics,
+plus private disposable setup files and initial demo baseline seeding. It does not yet
+implement the minimum traffic adapter. Current surfaces/events are empty; users/catalog,
+run registration/reset, snapshots, logical time, model control and training are unsupported.
+Unsupported operations explicitly return 501 (404 when SIM_MODE=false). Normal /api routes
+reject X-Sim-* headers. Initial seeding is not reset and creates no run or reset receipt.
+Discovery/diagnostics are usable before run registration. See PHASE3B.md for actual commands
+and limits; the JSON examples below describe future contract behavior, not current readiness.
+
 ## Scope and conventions
 
 - This is the planned v1 contract. Implement it incrementally and advertise only working

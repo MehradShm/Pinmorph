@@ -90,7 +90,12 @@ def main() -> int:
         "--fail-on-pending", action="store_true", help="Exit 2 for known missing prerequisites"
     )
     arguments = parser.parse_args()
-    exercises = pending_exercises(Path(app.__file__).parent)
+    # Phase 3B is a later independent track and must not block Phase 3A acceptance.
+    exercises = [
+        item
+        for item in pending_exercises(Path(app.__file__).parent)
+        if item["phase"] in {"2", "3A"}
+    ]
     runtimes = runtime_inventory()
     blockers = ["core_exercises_pending"] if exercises else []
     missing = [

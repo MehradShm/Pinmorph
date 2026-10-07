@@ -1,8 +1,9 @@
 # Revisiting an earlier phase
 
-The repository has `main`, `phase-2`, and the active `phase-3a` work branch. Annotated tags
-preserve `phase-1` and `phase-2-scaffold`. The latter is explicitly an unfinished learning
-scaffold, not a completed Phase 2 milestone. The Phase 1 tag is the validated core loop;
+The repository has `main`, `phase-2`, `phase-3a`, and the active `phase-3b` work branch.
+Annotated tags preserve `phase-1`, `phase-2-scaffold`, and `phase-3a-scaffold`. The scaffold
+tags are explicitly unfinished learning checkpoints, not completed milestones.
+The Phase 1 tag is the validated core loop;
 its tag message explicitly records that
 the developer's real H&M import is still pending. There is no separate Phase 0 snapshot.
 Everything is local; no GitHub remote has been configured or published.
@@ -66,6 +67,12 @@ git worktree add --detach ../pinterest-lite-phase-2-scaffold phase-2-scaffold
 This command is a recipe; that additional worktree has not been created. If running it,
 provide its own Compose project/ports/image tags and state, as in the Phase 1 example above.
 Current Phase 3A migrations use a newer schema than the Phase 2 checkpoint.
+
+To inspect the preserved Phase 3A scaffold, use `git worktree add --detach
+../pinterest-lite-phase-3a-scaffold phase-3a-scaffold`. This is a recipe; that worktree has
+not been created. Use isolated state when running it. The Phase 3B simulation Compose
+override creates its own separate project/stores; see PHASE3B.md. Baseline/control files
+and observation exports are outside those stores and are not captured by Git tags.
 
 Validation: the override's merged configuration is checked against the actual `phase-1`
 worktree. Running two stacks concurrently is an optional exercise, not a claim that both

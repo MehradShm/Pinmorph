@@ -19,6 +19,8 @@ from app.feed.service import FeedService
 from app.health import check_dependencies, check_postgres
 from app.learning import LearningExercisePending
 from app.logging.service import EventIngestor
+from app.operations.api import router as operations_router
+from app.operations.metrics import RequestMetrics
 from app.storage import make_s3_client
 
 logger = logging.getLogger("pinmorph.requests")
@@ -46,6 +48,7 @@ def create_app(
         application.state.settings = settings
         application.state.feed_service = feed_service
         application.state.event_ingestor = EventIngestor()
+        application.state.request_metrics = RequestMetrics()
         application.state.engine = engine
         application.state.storage = storage
         application.state.queue = Queue("default", connection=redis, serializer=JSONSerializer)
@@ -68,6 +71,7 @@ def create_app(
     application = FastAPI(title="Pinmorph", version="0.1.0", lifespan=lifespan)
     application.include_router(router)
     application.include_router(feed_router)
+    application.include_router(operations_router)
 
     @application.exception_handler(LearningExercisePending)
     async def pending_exercise(request: Request, exc: LearningExercisePending):
@@ -87,7 +91,16 @@ def create_app(
         request.state.request_id = request_id
         started = perf_counter()
         try:
-            response = await call_next(request)
+            if request.url.path.startswith("/api/") and any(
+                name.lower().startswith("x-sim-") for name in request.headers
+            ):
+                # Run attribution is not implemented yet; never silently ignore an override.
+                response = JSONResponse(
+                    status_code=422,
+                    content={"detail": "Simulator request overrides are not implemented"},
+                )
+            else:
+                response = await call_next(request)
         except Exception as exc:
             logger.error(
                 json.dumps(
@@ -103,8 +116,15 @@ def create_app(
                 content={"detail": "Internal server error", "request_id": request_id},
             )
         response.headers["X-Request-ID"] = request_id
-        if request.url.path.startswith("/api/"):
+        if request.url.path.startswith(("/api/", "/sim/")):
             response.headers.setdefault("Cache-Control", "no-store")
+        route = request.scope.get("route")
+        request.app.state.request_metrics.observe(
+            request.method,
+            getattr(route, "path", "unmatched"),
+            response.status_code,
+            (perf_counter() - started) * 1000,
+        )
         logger.info(
             json.dumps(
                 {

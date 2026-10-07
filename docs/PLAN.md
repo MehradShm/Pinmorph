@@ -245,9 +245,9 @@ the core ML logic the developer intends to learn.
 | Embeddings and retrieval | Popularity/recency; exact similarity on a small subset to check ANN recall | Pending: Phase 3A contracts/storage and toy targets are ready; explain user history cutoff, cold start, and accuracy versus latency after core implementation |
 | Engagement ranker | Unranked candidate blend or similarity ordering, evaluated on the same candidates | Pending: manifest/JSON artifact schema and scoring targets are ready; explain sampling, point-in-time features, and ranking versus CTR after fitting |
 | Reranker | Same ranked list without reranking | Pending: duplicate/creator-cap skeleton and target are ready; explain diversity and relevance tradeoffs after implementation |
-| MIND CTR | Training-period constant click-rate predictor | Explain label source, log loss/calibration, and why the app's proxy task differs |
+| MIND CTR | Training-period constant click-rate predictor | Pending: Phase 3B reader/contracts/artifact tools and toy targets are ready; explain label source, group splitting, log loss/calibration after fitting and a real-data comparison |
 | Model selection and rollout | Pinned version and deterministic experiment assignment | Trace which model served an item and demonstrate a configuration rollback |
-| Operational exercise | Known steady workload and explicitly expected failure/recovery behavior | Diagnose the bottleneck or failure from telemetry and explain the recovery |
+| Operational exercise | Known steady workload and explicitly expected failure/recovery behavior | Pending: diagnostics, disposable baseline setup/export and exercise worksheet are ready; minimum run adapter/reset and measured workloads are still required before diagnosis/recovery acceptance |
 
 ## 8. Revisit experiments backlog
 

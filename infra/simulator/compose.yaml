@@ -1,0 +1,17 @@
+# Always combine with compose.yaml and the generated simulation.env, and use its
+# pinmorph-sim-* project name. Project-scoped volumes/network isolate the three stores.
+name: ${SIM_ENVIRONMENT_ID:?Use generated simulation.env}
+services:
+  api:
+    environment: &simulation
+      SIM_MODE: "true"
+      SIM_DISPOSABLE: "true"
+      SIM_ENVIRONMENT_ID: ${SIM_ENVIRONMENT_ID:?Use generated simulation.env}
+      SIM_CONTROL_TOKEN: ${SIM_CONTROL_TOKEN:?Use generated simulation.env}
+    volumes:
+      - type: bind
+        source: ${SIM_CONTROL_DIR:?Use generated simulation.env}/baseline.json
+        target: /control/baseline.json
+        read_only: true
+  worker:
+    environment: *simulation

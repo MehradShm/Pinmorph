@@ -38,6 +38,7 @@ markers = [
     "integration: requires running Postgres, Redis, MinIO, and an RQ worker",
     "phase2_exercise: opt-in acceptance targets for the developer's Phase 2 learning core",
     "phase3_exercise: opt-in acceptance targets for the developer's Phase 3A ML learning core",
+    "phase3b_exercise: opt-in acceptance targets for the separate MIND CTR learning core",
 ]
 
 [tool.ruff]

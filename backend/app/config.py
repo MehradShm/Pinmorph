@@ -1,11 +1,11 @@
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.experiments.config import FeedConfig
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
 
     database_url: SecretStr = SecretStr(
         "postgresql+psycopg://pinmorph:pinmorph-local@127.0.0.1:15432/pinmorph"
@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     s3_bucket: str = "pinmorph-media"
     log_level: str = "INFO"
     sim_mode: bool = False
+    sim_disposable: bool = False
+    sim_environment_id: str | None = Field(
+        default=None, pattern=r"^pinmorph-sim-[a-z0-9][a-z0-9-]{0,30}$"
+    )
+    sim_control_token: SecretStr | None = None
     feed_config: FeedConfig = Field(default_factory=FeedConfig)
     health_timeout_seconds: float = Field(default=2.0, gt=0, le=10)
     upload_max_bytes: int = 12 * 1024 * 1024
@@ -29,3 +34,17 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://127.0.0.1:5173",
     ]
+
+    @model_validator(mode="after")
+    def simulation_requires_disposable_control(self):
+        if self.sim_mode and (
+            not self.sim_disposable
+            or not self.sim_environment_id
+            or not self.sim_control_token
+            or len(self.sim_control_token.get_secret_value()) < 32
+        ):
+            raise ValueError(
+                "SIM_MODE requires a disposable environment ID "
+                "and a control token of at least 32 characters"
+            )
+        return self

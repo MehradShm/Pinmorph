@@ -207,6 +207,15 @@ those namespaces silently in a later training dataset. Manifests also persist in
 
 See [docs/PHASE1.md](docs/PHASE1.md) for how the pieces interact and the API routes.
 
+## Phase 3B — CTR and operations preparation
+
+Phase 3B adds a separate local MIND reader/CTR learning scaffold and operational diagnostics:
+`make mind-fixture`, `make phase3b-preflight`, and opt-in `make phase3b-exercises`.
+The core algorithms remain pending. [docs/PHASE3B.md](docs/PHASE3B.md) explains disposable
+environment generation, guarded initial baseline seeding and authenticated observation export.
+The minimum simulator run/traffic adapter and reset remain unsupported; capability discovery
+advertises only diagnostics. Simulation/workload generation remains a separate project.
+
 ## Upstream implementation references
 
 - [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/): install from the lockfile in the image.
