@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 // The generated PNG fixture contains no external/licensed content.
-const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAFAAAAB4CAIAAADqjOKhAAAA00lEQVR4nOXOQQEAIBCAMCSbAQxkeFucD5Zg69xNicRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjMRIjL8D0x50xwIAYAeqegAAAABJRU5ErkJggg==', 'base64');
+import { png } from './fixtures';
 
 test('sign up, upload, create board, save, remove, and sign in again', async ({ page }) => {
   const errors: string[] = [];

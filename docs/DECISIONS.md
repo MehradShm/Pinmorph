@@ -197,3 +197,33 @@ what would make us revisit it. These entries double as interview prep notes.
 - **Why:** the developer can rehearse infrastructure operation while earlier learning core is unfinished. Resuming an importer does not quiesce old jobs, restore all state, close a run or preserve a reset receipt. No destructive reset is exposed without those guarantees.
 - **Alternatives:** share development stores; overwrite the baseline on each attempt; call reseeding a reset; embed workload/fault orchestration in this product.
 - **Revisit if:** Phase 2 acceptance permits the minimum adapter. Reset needs durable run/receipt records outside application state, a worker write barrier and interrupted-retry acceptance; logical time/model/snapshot controls remain later extensions.
+
+## 2026-10-07 · Start Phase 4 with independent product modules
+- **Decision:** preserve `phase-3b-scaffold`, work on `phase-4`, and implement keyword search, public profiles, social relationships, secret boards/sections and in-app follow activity first. Keep Following/related/Lens algorithms as five explicit Learn-mode exercise groups. Other Phase 4 extensions remain pending.
+- **Why:** these standard product modules can work independently of unfinished Phase 2/3A/3B learning acceptance. A newer branch must not imply earlier algorithms, model quality or simulator readiness are complete.
+- **Alternatives:** stop all product work until the first ML finish line; silently implement core algorithms; label the whole phase complete after scaffolding.
+- **Revisit if:** the developer explicitly requests core ML implementation. Then implement and walk through it under WORKING_AGREEMENT.md. See PHASE4.md for remaining scope and acceptance.
+
+## 2026-10-07 · Use PostgreSQL keyword matching before a dedicated search engine
+- **Decision:** generated English title/description tsvector plus GIN, parameterized plain queries, bounded last-token prefix suggestions, deterministic recency/ID ordering and query/filter-bound keyset cursors. Put search behind a small backend protocol and return request/backend versions.
+- **Why:** the existing database supports the first working search without another service. Stable pagination and privacy filters matter before relevance experiments. Search remains a catalog lookup while Phase 2 served-item attribution is unfinished.
+- **Alternatives:** substring scanning; external search engine; learned relevance immediately; pretend search responses are logged ML exposures.
+- **Revisit if:** measured latency/corpus size or language/relevance requirements need a dedicated engine. Compare PostgreSQL full-text with that engine, keeping corpus, queries and eligible visibility fixed.
+
+## 2026-10-07 · Preserve board privacy and enforce section membership in the database
+- **Decision:** all existing/new boards default secret; publication is explicit. Secret membership does not make catalog pins private. A composite FK enforces same-board save/section membership; it is checked at commit so section deletion can clear section_id without losing saves. Public reads share block/availability policy; authenticated media uses no-store.
+- **Why:** migrating formerly owner-only boards must not publish private collections. Database constraints prevent cross-board assignments independently of API checks, including retries and concurrent changes.
+- **Alternatives:** make legacy boards public by default; conflate board privacy with pin privacy; rely solely on application membership checks; delete saves with sections.
+- **Revisit if:** true private pin media/collaborative boards are added. That needs a distinct pin access model and cache policy. Migration tests upgrade real older rows in a disposable database and verify search backfill and saved-pin preservation.
+
+## 2026-10-07 · Serialize social transitions and notify transactionally
+- **Decision:** user pair locks in ID order serialize follow/block writes. Board follows also lock/re-read publication state. Blocks remove cross-user user/board relationships and notifications; mutes suppress discovery/activity but allow direct reads. In-app follow notifications are inserted with the first relationship in the same transaction.
+- **Why:** repeated/concurrent follows should create one relationship and one notice, while an unfollow followed by a later follow is a new transition. Blocking must not race with new relationships. Product records remain separate from ML engagements.
+- **Alternatives:** asynchronous fan-out before delivery guarantees; retry-created duplicate notices; hiding only UI buttons; using follow writes as observed impressions.
+- **Revisit if:** digest/outbox delivery or Following fan-out is implemented. Compare instant versus batched notifications and read versus write feed fan-out with a declared workload. No external email is sent by this implementation.
+
+## 2026-10-07 · Prepare Lens pixels while keeping inference and evaluation explicit
+- **Decision:** validate image size/type and normalized crop bounds, orient before cropping, flatten alpha, strip metadata, hash source/crop and retain pixels only transiently. Scaffold pinned image-only CLIP query inference and exact/ANN evaluation separately from Phase 3A catalog embedding recipes.
+- **Why:** crop preparation can be verified without models. Image-only queries and image-title catalog fusion need an explicit compatibility/quality experiment; toy overlap checks do not establish crop relevance.
+- **Alternatives:** silently use random vectors or downloaded weights; crop before EXIF orientation; persist user query images by default; call ANN agreement user accuracy.
+- **Revisit if:** object detection proposes crops, a product-only index is needed, or a real corpus supports exact/ANN latency and retrieval comparisons. Following/related/Lens serving must use shared request/item/view attribution after Phase 2 acceptance.

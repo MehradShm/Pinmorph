@@ -72,3 +72,22 @@ textarea { resize: vertical; } input:focus, textarea:focus, select:focus { borde
 @media (max-width: 950px) { .masonry { columns: 3; }.header { flex-wrap: wrap; }nav { order: 3; width: 100%; }.header { padding-bottom: 12px; gap: 12px; }main { padding-top: 28px; } }
 @media (max-width: 650px) { .masonry { columns: 2; column-gap: 14px; }.pin-card { margin-bottom: 18px; }.brand { font-size: 21px; }.account { gap: 10px; }.compact { padding: 10px 13px; font-size: 12px; }nav button { padding: 9px 14px; font-size: 13px; }.closeup { grid-template-columns: 1fr; }.closeup-image { min-height: 0; }.closeup-image img { max-height: 50dvh; }.closeup-info { padding: 24px; }.page-heading { align-items: start; } .page-heading > .secondary { padding: 11px 14px; font-size: 12px; white-space: nowrap; } footer span { display: none; }.modal { padding: 28px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+nav { flex-wrap: wrap; }
+.search-area, .board-tools { margin-bottom: 28px; }
+.search-form { flex-direction: row; align-items: end; flex-wrap: wrap; gap: 14px; margin: 0 0 22px; }
+.search-form label { flex: 1; min-width: 160px; max-width: 460px; }
+.search-form button { flex-shrink: 0; }
+.checkbox-label { flex-direction: row; align-items: center; }
+.checkbox-label input { width: auto; }
+.inline-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+.inline-actions label { min-width: 180px; }
+.people-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 20px; margin: 24px 0; }
+.person-card { padding: 24px; background: #e9eee6; border-radius: 18px; color: inherit; text-align: left; overflow-wrap: anywhere; }
+.person-card h2 { font-size: 21px; }.person-card p { font-size: 14px; }
+.profile-boards { display: flex; flex-direction: column; gap: 12px; }
+.activity-row { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; padding: 18px 0; border-bottom: 1px solid #e9e4dc; }
+.activity-row time { font-size: 12px; color: #7a7d72; }
+.board-tools { padding: 20px; background: #eee8df66; border-radius: 16px; }
+@media (max-width: 1200px) { .header { flex-wrap: wrap; } nav { order: 3; width: 100%; } }
+@media (max-width: 650px) { nav { gap: 0; } nav button { padding: 9px 10px; } .search-form label { min-width: 140px; } }

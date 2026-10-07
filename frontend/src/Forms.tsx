@@ -66,13 +66,15 @@ export function BoardForm({ onClose, onBoard }: { onClose: () => void; onBoard: 
     event.preventDefault(); setBusy(true); setError('');
     const data = new FormData(event.currentTarget);
     try {
-      onBoard(await api<Board>('/boards', jsonBody({ name: data.get('name') }))); onClose();
+      onBoard(await api<Board>('/boards', jsonBody({ name: data.get('name'), is_secret: data.has('is_secret') }))); onClose();
     } catch (error) { setError(message(error)); } finally { setBusy(false); }
   }
   return <Modal title="Create a board" onClose={onClose}>
     <p className="eyebrow">Give your ideas a home</p><h2>Create a board.</h2>
     <form onSubmit={submit}>
       <label>Board name<input name="name" required maxLength={100} placeholder="Everyday inspiration" /></label>
+      <label className="checkbox-label"><input type="checkbox" name="is_secret" defaultChecked />Keep this board secret</label>
+      <small className="muted">Secret boards are visible only to you. Uploaded pins remain in the public collection.</small>
       {error && <p className="error" role="alert">{error}</p>}
       <button className="primary" disabled={busy}>{busy ? 'Creating…' : 'Create board'}</button>
     </form>

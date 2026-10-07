@@ -1,7 +1,8 @@
 # Revisiting an earlier phase
 
-The repository has `main`, `phase-2`, `phase-3a`, and the active `phase-3b` work branch.
-Annotated tags preserve `phase-1`, `phase-2-scaffold`, and `phase-3a-scaffold`. The scaffold
+The repository has `main`, `phase-2`, `phase-3a`, `phase-3b`, and the active `phase-4` work branch.
+Annotated tags preserve `phase-1`, `phase-2-scaffold`, `phase-3a-scaffold`, and
+`phase-3b-scaffold`. The scaffold
 tags are explicitly unfinished learning checkpoints, not completed milestones.
 The Phase 1 tag is the validated core loop;
 its tag message explicitly records that
@@ -77,3 +78,8 @@ and observation exports are outside those stores and are not captured by Git tag
 Validation: the override's merged configuration is checked against the actual `phase-1`
 worktree. Running two stacks concurrently is an optional exercise, not a claim that both
 have been started on this machine.
+
+To inspect the preserved Phase 3B tooling, use `git worktree add --detach
+../pinterest-lite-phase-3b-scaffold phase-3b-scaffold`. This is a recipe; that worktree has
+not been created. Phase 4 adds migration `d12ac1433a55`; use isolated state to run old code.
+The Phase 3B tag preserves incomplete CTR/adapter work, not a completed ML/operations track.

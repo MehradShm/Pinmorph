@@ -216,6 +216,19 @@ environment generation, guarded initial baseline seeding and authenticated obser
 The minimum simulator run/traffic adapter and reset remain unsupported; capability discovery
 advertises only diagnostics. Simulation/workload generation remains a separate project.
 
+## Phase 4 — first product extensions
+
+Phase 4 has started on `phase-4` with keyword search/typeahead, public profiles, user and
+board follows, blocks/mutes, secret boards/sections and in-app follow activity. The UI
+exposes these at http://localhost:8080. Existing boards stay secret unless explicitly
+published; secret membership does not make uploaded pins private. Search returns a request
+ID/backend version; Phase 2 served-item/impression attribution remains pending.
+
+[docs/PHASE4.md](docs/PHASE4.md) documents implementation, APIs and the remaining scope.
+Following/related/Lens algorithms are typed learning exercises, not working recommendations.
+`make phase4-preflight` inventories them; `make phase4-exercises` opts into pending targets.
+Other Phase 4 modules remain on the roadmap. `phase-3b-scaffold` preserves the previous code.
+
 ## Upstream implementation references
 
 - [uv Docker integration](https://docs.astral.sh/uv/guides/integration/docker/): install from the lockfile in the image.

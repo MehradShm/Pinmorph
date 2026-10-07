@@ -230,6 +230,9 @@ Neither requires proving what real users would prefer.
   related pins, interest onboarding, profile/board extras, URL import, thin engagement,
   notifications, and safety. Lens remains a deep learning module; add its crop-search
   baseline and ANN evaluation as its own checkpoint. Build these modules independently.
+  Current status: first keyword search/profile/social/secret-board/section/in-app activity
+  modules implemented; Following, related and Lens core remain exercises. Onboarding, URL
+  import, other engagement, email and moderation work remain pending. See PHASE4.md.
 - **Phase 5, thin monetization:** business-account features, product data, shop filter,
   placeholder ad slots, and analytics rollups. A full ad-serving system remains separate.
 
@@ -248,6 +251,8 @@ the core ML logic the developer intends to learn.
 | MIND CTR | Training-period constant click-rate predictor | Pending: Phase 3B reader/contracts/artifact tools and toy targets are ready; explain label source, group splitting, log loss/calibration after fitting and a real-data comparison |
 | Model selection and rollout | Pinned version and deterministic experiment assignment | Trace which model served an item and demonstrate a configuration rollback |
 | Operational exercise | Known steady workload and explicitly expected failure/recovery behavior | Pending: diagnostics, disposable baseline setup/export and exercise worksheet are ready; minimum run adapter/reset and measured workloads are still required before diagnosis/recovery acceptance |
+| Following and related discovery | Deterministic visible social union; public co-board counts versus similarity on fixed candidates | Pending: Phase 4 interfaces are ready; implement serving/time/privacy acceptance and explain fan-out and secret-board exclusion |
+| Lens crop retrieval | Exact cosine retrieval on the same eligible versioned corpus | Pending: crop preparation and known-answer targets work; inference, exact/ANN comparison, latency report and explain-back remain |
 
 ## 8. Revisit experiments backlog
 

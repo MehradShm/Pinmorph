@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { api, message, type Board, type Pin, type User } from './api';
 import Modal from './Modal';
 
-export default function Closeup({ pinId, boards, user, onClose, onAuth, onBoard, onSaved }: {
+export default function Closeup({ pinId, boards, user, onClose, onAuth, onBoard, onSaved, onProfile }: {
   pinId: string; boards: Board[]; user: User | null; onClose: () => void;
   onAuth: () => void; onBoard: () => void; onSaved: () => void;
+  onProfile: (id: string) => void;
 }) {
   const [pin, setPin] = useState<Pin | null>(null);
   const [boardId, setBoardId] = useState('');
@@ -35,6 +36,7 @@ export default function Closeup({ pinId, boards, user, onClose, onAuth, onBoard,
       <div className="closeup-info">
         <p className="eyebrow">{pin.provenance === 'synthetic_demo' ? 'Demo collection' : 'Worth a closer look'}</p>
         <h2>{pin.title}</h2><p className="description">{pin.description}</p>
+        {pin.owner_id && <button className="text-button" onClick={() => onProfile(pin.owner_id!)}>View creator</button>}
         {pin.source_url && <a className="source" href={pin.source_url} target="_blank" rel="noopener noreferrer">Visit source ↗</a>}
         {pin.status === 'ready' && <div className="save-controls">
           {user && boards.length > 0 && <label>Save to board<select aria-label="Save to board" value={boardId}

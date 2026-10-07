@@ -5,7 +5,10 @@ export type Pin = {
   processing_error: string | null; width: number | null; height: number | null;
   dominant_color: string | null; image_url: string | null; thumbnail_url: string | null;
 };
-export type Board = { id: string; name: string; pin_count: number };
+export type Board = { id: string; name: string; pin_count: number; owner_id: string; is_secret: boolean; is_following?: boolean };
+export type Section = { id: string; name: string };
+export type Profile = { id: string; display_name: string; bio: string; follower_count: number; following_count: number; is_following: boolean; is_muted: boolean };
+export type Page<T> = { items: T[]; next_cursor: string | null };
 export type PinPage = { items: Pin[]; next_cursor: string | null; request_id: string };
 
 export class ApiError extends Error {

@@ -245,3 +245,57 @@ reproducible baseline/held-out quality comparison and explain-back. The minimum 
 run/users/catalog/recommendations/events adapter, mutation/job attribution and quiescent
 baseline reset remain pending on earlier services. Logical time, snapshot/model/train
 controls are unsupported. The separate simulator is not built here. Phase 4 has not started.
+
+## Phase 4 — first product modules implemented; discovery core pending
+
+Implemented on 2026-10-07:
+
+- Preserved `phase-3b-scaffold` and started `phase-4`; earlier learning milestones remain
+  unfinished. This is the first independent product milestone, not the entire Phase 4 scope.
+- PostgreSQL English keyword search over title/description with generated tsvector/GIN,
+  prefix title suggestions, owner/provenance/aware-date filters, recency ordering and
+  query/filter-bound keyset pagination. A swappable search protocol returns request/backend
+  versions; served-item/impression attribution remains a Phase 2 dependency.
+- Public display-name/bio profiles, profile editing, name lookup and paginated connections,
+  public board/ready-pin APIs; public output excludes email/authentication/import keys.
+- Durable user/board follows, block/mute controls, shared visibility policy and transactional
+  in-app follow notifications. Ordered user locks serialize concurrent relationship changes;
+  board follows re-read locked publication state. Blocks remove cross-user follows/notices.
+- Secret/public boards and sections. Existing boards stay secret; publishing is explicit.
+  Public reads respect privacy/availability/block policy, including own-board counts.
+  Same-board save/section membership is enforced by a deferred composite FK; deleting a
+  section clears its assignment without removing saved pins. Authenticated media is no-store.
+- Working UI for search/collection filters, People, profile editing, public boards/follows,
+  activity/read acknowledgments, unblock/unmute, board publication/sections and creator links.
+- Validated transient Lens crop preparation: image limits, EXIF orientation, normalized
+  region, RGB/alpha flattening, metadata removal and source/crop hashes.
+- Typed Following/related/crop encoder/Lens interfaces and versioned registry/config selection
+  at startup, including DISCOVERY_CONFIG passthrough in Compose. Five core TODO groups and
+  six opt-in Lens targets remain pending; no inference or fake retrieval results are served.
+- Additive migration `d12ac1433a55`, readiness revision update, PHASE4 guide, prerequisite
+  inventory, commands, roadmap, decision records and historical-checkpoint instructions.
+
+Validation on 2026-10-07:
+
+- Unit checks: 103 passed (77 existing plus 26 search/crop/config checks); core exercises skipped.
+- Full real-service checks: 33 passed (25 existing plus seven Phase 4 API/race/privacy checks
+  and one disposable migration test). Affected Phase 4 checks also passed after final
+  registry/visibility changes. Additional assertions confirm search creates no ML impressions
+  and valid Lens input reaches the explicit pending service.
+- Fresh disposable database upgraded from Phase 3A with real legacy user/board/save/pin rows:
+  old boards remained secret, bios defaulted empty, existing pins became searchable, and
+  section deletion preserved saves. Downgrade/re-upgrade passed; that exact database was removed.
+- Six browser checks passed: original core/seed flows plus Phase 4 search/profile/board-section/
+  user-follow/board-follow/activity flows on Chromium desktop/mobile. No page errors or
+  horizontal overflow. Six exact recorded test accounts and their media were cleaned afterward.
+- Ruff lint/format, TypeScript/Vite build, additive migration and schema drift comparison passed.
+  The normal stack is running and ready with its original 32 demo pins retained.
+- Six opt-in Lens targets fail at the intended pending TODOs. Static inventory lists all
+  five Phase 4 core groups and earlier serving dependencies; these are not ML acceptance.
+
+Remaining Phase 4: actual Following/related serving and attribution, pinned crop inference,
+exact/ANN corpus/latency/relevance comparisons and explain-back; interest onboarding, URL
+import, comments/reactions/hide/report, digest email, moderation/classifier/duplicate gate
+and richer profile/settings. Secret membership does not imply private pins. Preference
+lists currently show the first 100 blocked/muted users each. Simulator capability remains
+diagnostics-only; the earlier minimum run adapter/reset and CTR work are still pending.
