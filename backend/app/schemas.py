@@ -37,6 +37,7 @@ class UserOut(BaseModel):
 
 class BoardInput(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+    is_secret: bool = True
 
     @field_validator("name")
     @classmethod

@@ -5,6 +5,7 @@ from app.config import Settings
 from app.database import Base, make_engine
 from app.logging import models as logging_models  # noqa: F401 -- register Phase 2 tables
 from app.ml import models as ml_models  # noqa: F401 -- register Phase 3A tables
+from app.social import models as social_models  # noqa: F401 -- register social tables
 
 target_metadata = Base.metadata
 

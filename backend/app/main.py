@@ -12,8 +12,11 @@ from rq import Queue
 from rq.serializers import JSONSerializer
 
 from app.api import router
+from app.boards.api import router as boards_router
 from app.config import Settings
 from app.database import make_engine
+from app.discovery.api import router as discovery_router
+from app.discovery.service import DiscoveryServices
 from app.feed.api import router as feed_router
 from app.feed.service import FeedService
 from app.health import check_dependencies, check_postgres
@@ -21,6 +24,9 @@ from app.learning import LearningExercisePending
 from app.logging.service import EventIngestor
 from app.operations.api import router as operations_router
 from app.operations.metrics import RequestMetrics
+from app.search.api import router as search_router
+from app.search.service import PostgresTextSearch
+from app.social.api import router as social_router
 from app.storage import make_s3_client
 
 logger = logging.getLogger("pinmorph.requests")
@@ -34,6 +40,7 @@ def create_app(
     settings = settings or Settings()
     # Validate versioned configuration before the application starts accepting requests.
     feed_service = FeedService(settings.feed_config)
+    discovery_services = DiscoveryServices(settings.discovery_config)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
@@ -47,6 +54,8 @@ def create_app(
         storage = make_s3_client(settings)
         application.state.settings = settings
         application.state.feed_service = feed_service
+        application.state.search_backend = PostgresTextSearch()
+        application.state.discovery_services = discovery_services
         application.state.event_ingestor = EventIngestor()
         application.state.request_metrics = RequestMetrics()
         application.state.engine = engine
@@ -71,6 +80,10 @@ def create_app(
     application = FastAPI(title="Pinmorph", version="0.1.0", lifespan=lifespan)
     application.include_router(router)
     application.include_router(feed_router)
+    application.include_router(search_router)
+    application.include_router(social_router)
+    application.include_router(boards_router)
+    application.include_router(discovery_router)
     application.include_router(operations_router)
 
     @application.exception_handler(LearningExercisePending)

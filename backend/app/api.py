@@ -32,8 +32,9 @@ from app.auth import (
     verify_password,
 )
 from app.media import InvalidImage, enqueue_pin, validate_image
-from app.models import AuthSession, Board, Pin, Save, User, new_id, utcnow
+from app.models import AuthSession, Board, BoardSection, Pin, Save, User, new_id, utcnow
 from app.schemas import BoardInput, Credentials, PinMetadata, PinOut, PinPage, Signup, UserOut
+from app.social.policy import visible_board, visible_owner, visible_pin
 
 router = APIRouter(prefix="/api")
 mutations = [Depends(check_origin)]
@@ -142,12 +143,15 @@ def list_page(
 def catalog(
     request: Request,
     db: DB,
+    user: OptionalUser,
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
     cursor: Annotated[str | None, Query(max_length=300)] = None,
 ):
     # Plain catalog pagination. Recommendation ordering/attribution arrives in Phase 2.
     statement = select(Pin, Pin.created_at).where(
-        Pin.status == "ready", Pin.available_at <= utcnow()
+        Pin.status == "ready",
+        Pin.available_at <= utcnow(),
+        visible_owner(Pin.owner_id, user, include_muted=True),
     )
     return list_page(statement, Pin.created_at, request, db, limit, cursor)
 
@@ -216,13 +220,7 @@ def upload_pin(
 
 @router.get("/pins/{pin_id}", response_model=PinOut)
 def pin_detail(pin_id: str, db: DB, user: OptionalUser):
-    pin = db.get(Pin, pin_id)
-    if not pin or (
-        (pin.status != "ready" or pin.available_at > utcnow())
-        and (not user or pin.owner_id != user.id)
-    ):
-        raise HTTPException(404, "Pin not found")
-    return pin_out(pin)
+    return pin_out(visible_pin(db, pin_id, user))
 
 
 @router.post("/pins/{pin_id}/retry", response_model=PinOut, status_code=202, dependencies=mutations)
@@ -240,8 +238,10 @@ def retry_pin(pin_id: str, request: Request, db: DB, user: CurrentUser):
 
 
 @router.get("/media/{pin_id}/{variant}.jpg")
-def media(pin_id: str, variant: Literal["thumb", "display"], request: Request, db: DB):
-    pin = db.get(Pin, pin_id)
+def media(
+    pin_id: str, variant: Literal["thumb", "display"], request: Request, db: DB, user: OptionalUser
+):
+    pin = visible_pin(db, pin_id, user)
     if (
         not pin
         or pin.status != "ready"
@@ -268,7 +268,7 @@ def media(pin_id: str, variant: Literal["thumb", "display"], request: Request, d
         chunks(),
         media_type="image/jpeg",
         headers={
-            "Cache-Control": "public, max-age=31536000, immutable",
+            "Cache-Control": "private, no-store",
             "X-Content-Type-Options": "nosniff",
         },
     )
@@ -283,22 +283,40 @@ def owned_board(db, board_id: str, user: User) -> Board:
 
 @router.get("/boards")
 def boards(db: DB, user: CurrentUser):
+    visible_pins = select(Pin.id).where(
+        Pin.status == "ready", Pin.available_at <= utcnow(), visible_owner(Pin.owner_id, user)
+    )
     rows = db.execute(
         select(Board, func.count(Save.id))
-        .outerjoin(Save)
+        .outerjoin(Save, and_(Save.board_id == Board.id, Save.pin_id.in_(visible_pins)))
         .where(Board.owner_id == user.id)
         .group_by(Board.id)
         .order_by(Board.created_at.desc())
     ).all()
-    return [{"id": board.id, "name": board.name, "pin_count": count} for board, count in rows]
+    return [
+        {
+            "id": board.id,
+            "name": board.name,
+            "pin_count": count,
+            "is_secret": board.is_secret,
+            "owner_id": board.owner_id,
+        }
+        for board, count in rows
+    ]
 
 
 @router.post("/boards", status_code=201, dependencies=mutations)
 def create_board(body: BoardInput, db: DB, user: CurrentUser):
-    board = Board(owner_id=user.id, name=body.name)
+    board = Board(owner_id=user.id, name=body.name, is_secret=body.is_secret)
     db.add(board)
     db.commit()
-    return {"id": board.id, "name": board.name, "pin_count": 0}
+    return {
+        "id": board.id,
+        "name": board.name,
+        "pin_count": 0,
+        "is_secret": board.is_secret,
+        "owner_id": board.owner_id,
+    }
 
 
 @router.get("/boards/{board_id}/pins", response_model=PinPage)
@@ -306,24 +324,35 @@ def board_pins(
     board_id: str,
     request: Request,
     db: DB,
-    user: CurrentUser,
+    user: OptionalUser,
     limit: Annotated[int, Query(ge=1, le=100)] = 30,
     cursor: Annotated[str | None, Query(max_length=300)] = None,
+    section_id: Annotated[str | None, Query(min_length=36, max_length=36)] = None,
 ):
-    owned_board(db, board_id, user)
+    visible_board(db, board_id, user)
     statement = (
         select(Pin, Save.created_at)
         .join(Save)
-        .where(Save.board_id == board_id, Pin.status == "ready", Pin.available_at <= utcnow())
+        .where(
+            Save.board_id == board_id,
+            Pin.status == "ready",
+            Pin.available_at <= utcnow(),
+            visible_owner(Pin.owner_id, user),
+        )
     )
+    if section_id:
+        section = db.get(BoardSection, section_id)
+        if section is None or section.board_id != board_id:
+            raise HTTPException(404, "Section not found")
+        statement = statement.where(Save.section_id == section_id)
     return list_page(statement, Save.created_at, request, db, limit, cursor)
 
 
 @router.post("/boards/{board_id}/pins/{pin_id}", dependencies=mutations)
 def save_pin(board_id: str, pin_id: str, db: DB, user: CurrentUser):
     owned_board(db, board_id, user)
-    pin = db.get(Pin, pin_id)
-    if not pin or pin.status != "ready" or pin.available_at > utcnow():
+    pin = visible_pin(db, pin_id, user)
+    if pin.status != "ready" or pin.available_at > utcnow():
         raise HTTPException(404, "Ready pin not found")
     save = Save(board_id=board_id, pin_id=pin_id)
     db.add(save)

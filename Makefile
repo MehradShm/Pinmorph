@@ -1,4 +1,4 @@
-.PHONY: up down logs check integration seed-plan seed-demo web-check browser-check phase2-exercises phase3-exercises phase3-preflight phase3b-exercises phase3b-preflight mind-fixture
+.PHONY: up down logs check integration seed-plan seed-demo web-check browser-check phase2-exercises phase3-exercises phase3-preflight phase3b-exercises phase3b-preflight phase4-exercises phase4-preflight mind-fixture
 
 up:
 	docker compose up --build -d --wait
@@ -29,6 +29,12 @@ phase3b-exercises:
 
 phase3b-preflight:
 	uv run --locked python -m scripts.phase3b_preflight
+
+phase4-exercises:
+	RUN_PHASE4_EXERCISES=1 uv run --locked pytest -m phase4_exercise
+
+phase4-preflight:
+	uv run --locked python -m scripts.phase4_preflight
 
 mind-fixture:
 	uv run --locked python -m scripts.inspect_mind --dataset-dir backend/tests/fixtures/mind_synthetic --partition fixture --source-timezone UTC --provenance synthetic_fixture
