@@ -147,3 +147,48 @@ is advertised. Phase 2 is not complete and has no completion tag.
 
 The exact five named core exercises, expected fixtures, interaction diagram, alternatives,
 and explain-back questions are in PHASE2.md. Explain-back outcomes remain pending.
+
+## Phase 3A — started; ML scaffold ready, core pending
+
+Implemented on 2026-10-07:
+
+- `phase-2-scaffold` annotated checkpoint and active `phase-3a` branch; no Phase 2/3A
+  completion tag and no GitHub remote publication.
+- PinEmbedder/UserEmbedder contracts and typed finite vectors, aware-time histories,
+  interactions, target-action provenance and training examples.
+- Configured CLIP/image-title recipe, decayed user mean, candidate quotas, and diversity
+  policy; explicit positive/sampling/source/time/split/evaluation manifests.
+- Additive vector schema `cdfce4ed4eea`: model metadata, content/model revision keys,
+  consistent dimensions, unit-norm constraints and availability timestamps.
+- Locked pgvector Python adapter and NumPy; variable-dimensional storage verified.
+- Validated/checksummed JSON logistic artifacts with ordered features, train-only scaling
+  and provenance, atomic publication and no-overwrite behavior.
+- Explicit exercises for embeddings, exact/ANN retrieval, candidate blend, temporal splits,
+  implicit examples, fitting, scoring, reranking and offline metrics. No fake vectors or scores.
+- Read-only prerequisite inventory, opt-in ML targets, PHASE3A guide and decision records.
+
+Validation on 2026-10-07:
+
+- Unit checks: 45 passed (32 existing plus 13 artifact/config/provenance/inventory checks).
+- Real-service checks: 24 passed (18 existing plus 6 pgvector schema/roundtrip checks).
+- Browser regression: 4 passed on Chromium desktop/mobile against the updated stack;
+  exact recorded disposable accounts and media were cleaned afterward.
+- Compose build/start and additive migration passed; Alembic schema drift check passed.
+- Ruff lint and formatting passed.
+- Sixteen opt-in Phase 3A core targets fail at LearningExercisePending, as intended. These
+  are unfinished acceptance targets, not a successful retrieval/training/evaluation result.
+- Database inventory: 32 ready demo pins; zero imported interactions, feed requests,
+  impressions, engagements, embedding model registrations, and persisted embeddings.
+- Read-only inventory saved locally at `data/manifests/phase3-scaffold-preflight.json`
+  (ignored by Git); it is an inventory record, not a state snapshot or model report.
+- Torch, OpenCLIP, sklearn and MLflow are not installed. No weights, trained models, ANN
+  indexes, personalized feed, MLflow run or offline quality comparison exist yet.
+
+Phase 2's core and UI instrumentation remain prerequisites for end-to-end personalization.
+Core ML learning implementation, real declared history, runtime/checkpoint pinning, embedding
+jobs, ANN recall/latency measurements, model fitting/evaluation and serving activation/rollback
+remain pending. Pure fixture exercises can proceed before the complete serving path.
+
+PHASE3A.md records the twelve exercise groups, component flow, alternatives and explain-back
+questions. Explain-back and baseline comparison outcomes remain pending; the separate simulator
+and Phase 3B CTR/operations track are not implemented by this scaffold.

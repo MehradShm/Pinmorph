@@ -1,7 +1,9 @@
 # Revisiting an earlier phase
 
-The repository now has a `main` branch, an annotated `phase-1` tag, and a working `phase-2`
-branch. The Phase 1 tag is the validated core loop; its tag message explicitly records that
+The repository has `main`, `phase-2`, and the active `phase-3a` work branch. Annotated tags
+preserve `phase-1` and `phase-2-scaffold`. The latter is explicitly an unfinished learning
+scaffold, not a completed Phase 2 milestone. The Phase 1 tag is the validated core loop;
+its tag message explicitly records that
 the developer's real H&M import is still pending. There is no separate Phase 0 snapshot.
 Everything is local; no GitHub remote has been configured or published.
 
@@ -54,6 +56,16 @@ Use the same Compose flags with `down` to stop only this historical stack. Keep 
 volumes to resume later. Host-run Python commands need matching historical connection URLs;
 the commands above run inside the correct container and avoid accidentally using Phase 2's
 local `.env`. This reconstructs a demo baseline, not a backup of earlier user activity.
+
+To inspect Phase 2's preserved scaffold without switching current code, use another worktree:
+
+```bash
+git worktree add --detach ../pinterest-lite-phase-2-scaffold phase-2-scaffold
+```
+
+This command is a recipe; that additional worktree has not been created. If running it,
+provide its own Compose project/ports/image tags and state, as in the Phase 1 example above.
+Current Phase 3A migrations use a newer schema than the Phase 2 checkpoint.
 
 Validation: the override's merged configuration is checked against the actual `phase-1`
 worktree. Running two stacks concurrently is an optional exercise, not a claim that both

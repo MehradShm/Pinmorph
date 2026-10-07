@@ -74,7 +74,7 @@ def create_app(
         return JSONResponse(
             status_code=503,
             content={
-                "detail": "Phase 2 learning implementation is pending",
+                "detail": f"Phase {exc.phase} learning implementation is pending",
                 "exercise": exc.exercise,
                 "request_id": request.state.request_id,
             },

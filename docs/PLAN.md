@@ -242,9 +242,9 @@ the core ML logic the developer intends to learn.
 | Checkpoint | Baseline or invariant | Explain-back outcome |
 |---|---|---|
 | Logging and labels | A small known request/view/action fixture, including retries and unseen items | Pending: Phase 2 scaffold and opt-in targets are ready; explain attribution, idempotency, and when an example becomes a negative after implementing the core |
-| Embeddings and retrieval | Popularity/recency; exact similarity on a small subset to check ANN recall | Explain user history cutoff, cold start, and retrieval accuracy versus latency |
-| Engagement ranker | Unranked candidate blend or similarity ordering, evaluated on the same candidates | Explain sampled negatives, point-in-time features, and ranking versus CTR |
-| Reranker | Same ranked list without reranking | Explain duplicate removal, creator concentration, diversity, and relevance tradeoffs |
+| Embeddings and retrieval | Popularity/recency; exact similarity on a small subset to check ANN recall | Pending: Phase 3A contracts/storage and toy targets are ready; explain user history cutoff, cold start, and accuracy versus latency after core implementation |
+| Engagement ranker | Unranked candidate blend or similarity ordering, evaluated on the same candidates | Pending: manifest/JSON artifact schema and scoring targets are ready; explain sampling, point-in-time features, and ranking versus CTR after fitting |
+| Reranker | Same ranked list without reranking | Pending: duplicate/creator-cap skeleton and target are ready; explain diversity and relevance tradeoffs after implementation |
 | MIND CTR | Training-period constant click-rate predictor | Explain label source, log loss/calibration, and why the app's proxy task differs |
 | Model selection and rollout | Pinned version and deterministic experiment assignment | Trace which model served an item and demonstrate a configuration rollback |
 | Operational exercise | Known steady workload and explicitly expected failure/recovery behavior | Diagnose the bottleneck or failure from telemetry and explain the recovery |

@@ -40,6 +40,8 @@ product features, the separate MIND CTR study, and simulator exercises follow th
 - Migrate database: `uv run --locked alembic upgrade head`
 - Demo catalog: `make seed-demo`; H&M importer and dry run: see README.md
 - Frontend build: `make web-check`; desktop/mobile browser checks: `make browser-check`
+- Phase 3A prerequisite inventory: `make phase3-preflight`; core learning targets:
+  `make phase3-exercises` (expected to fail at TODOs until implemented); see docs/PHASE3A.md
 - Setup and container-only checks: see README.md
 
 ## Non-negotiable conventions

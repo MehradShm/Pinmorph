@@ -2,6 +2,7 @@
 
 
 class LearningExercisePending(NotImplementedError):
-    def __init__(self, exercise: str):
+    def __init__(self, exercise: str, *, phase: str = "2"):
         self.exercise = exercise
-        super().__init__(f"Phase 2 exercise pending: {exercise}")
+        self.phase = phase
+        super().__init__(f"Phase {phase} exercise pending: {exercise}")

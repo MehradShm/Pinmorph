@@ -149,3 +149,27 @@ what would make us revisit it. These entries double as interview prep notes.
 - **Why:** deterministic, inspectable baselines make later model experiments comparable. Purchase proxies are not observed CTR, and information arriving late cannot be used earlier. V1 full-catalog retrieval is explicit at demo scale.
 - **Alternatives:** popularity from current board membership; silently merge purchases and observed saves; process-dependent hashes; bounded retrieval before coverage is measured.
 - **Revisit if:** scale motivates SQL shortlists, different source weights, or personalized models. These algorithms remain marked core exercises until implemented and reviewed.
+
+## 2026-10-07 · Start Phase 3A while preserving unfinished Phase 2 dependencies
+- **Decision:** preserve `phase-2-scaffold` as an annotated checkpoint and develop the Phase 3A ML scaffold on `phase-3a`. Keep Phase 2 and Phase 3A core algorithms as Learn-mode exercises. Generalize pending-exercise errors to identify the phase. No completion tag or personalized-serving claim.
+- **Why:** pure ML correctness exercises and storage/artifact work can proceed independently, while end-to-end serving still requires the earlier feed/logging path. WORKING_AGREEMENT.md says the developer writes the core unless they request otherwise.
+- **Alternatives:** treat Phase 2 scaffolding as completed; silently implement the learning core; block all independent Phase 3A work until telemetry is complete.
+- **Revisit if:** the developer requests core implementation, or all prerequisite acceptance checks pass. Phase 3B remains a separate MIND/operations track.
+
+## 2026-10-07 · Version embeddings and preserve content revisions
+- **Decision:** model metadata records checkpoint hash, dimension, preprocessing/text/fusion policy and library versions. Pin vectors are keyed by pin/model/content hash, constrained to matching model dimensions and unit norm. Use unbounded pgvector storage so new dimensions can coexist; version-specific HNSW indexes and retrieval remain exercises. Lock the pgvector Python adapter; do not download ML weights or install Torch/OpenCLIP/sklearn/MLflow merely to execute schema checks.
+- **Why:** different embedding models are different spaces, and overwriting content revisions would erase the information needed for point-in-time replay. Toy storage checks establish database behavior, not CLIP inference or ANN recall.
+- **Alternatives:** one mutable vector column on pins; one fixed dimension for all experiments; mix models in one ANN index.
+- **Revisit if:** measured scale warrants separate tables/partitions or index changes. The future embedding writer must enforce insert-only revision semantics; schemas do not prevent arbitrary SQL updates. [pgvector mixed-dimension guidance](https://github.com/pgvector/pgvector#can-i-store-vectors-with-different-dimensions-in-the-same-column).
+
+## 2026-10-07 · Make source replay and live availability explicit
+- **Decision:** training manifests declare exact import runs, chronological cutoffs/ties, positive target (purchases and saves), source weights, negative universe/seed, embedding/feature versions, and fixed-model evaluation policy. Permit historical source replay only for imported proxies; live/observed/simulator history uses recorded receipt availability. Source adapters and feature/example builders remain learning core.
+- **Why:** the local import happens long after the source interactions. An offline historical replay can use source chronology under a declared assumption, while an old occurrence time cannot move a late live event's availability backward. Closeups/source clicks can inform history but are not the v1 positive target.
+- **Alternatives:** use current mutable state for historical features; silently rewrite live receipt times; pool all sources or actions without provenance/weights.
+- **Revisit if:** observed-impression datasets or richer simulation time modes are implemented; those require their own label and lateness policies.
+
+## 2026-10-07 · Use inspectable model artifacts and known-answer ML checkpoints
+- **Decision:** validate and publish checksummed JSON logistic artifacts with ordered features, train-only scaling, coefficients, manifest and library versions. Publication is atomic and refuses replacement. Keep scoring/fitting and metric computation as exercises, compare exact/ANN and recency/popularity under fixed candidate policies, and expose a read-only static/runtime/data inventory.
+- **Why:** serving must use the same feature order/transform as training, and model experiments need attributable, pinned artifacts. Empty history, ties, late events, unknown creators and sampled-unobserved labels need explicit correctness targets before evaluating quality.
+- **Alternatives:** opaque mutable pickle artifacts; fit transforms during serving; fabricate scores/metrics for a demo; treat removed TODOs as proof of acceptance.
+- **Revisit if:** LightGBM/neural models need a different artifact format, or MLflow-backed model rollout is implemented. Artifact tooling does not imply that a model has been trained or activated.

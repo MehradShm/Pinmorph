@@ -18,6 +18,13 @@ calls return 503 until implemented. The UI still runs the Phase 1 loop. See
 The local `phase-1` tag preserves the previous version; [milestone instructions](docs/MILESTONES.md)
 explain how to revisit it with isolated application state.
 
+Phase 3A has started on `phase-3a`: embedding/history/retrieval/training contracts, versioned
+pgvector storage, validated training manifests, checksummed JSON ranker artifacts, preflight
+inventory, and core ML learning targets. The ML algorithms and Phase 2 core remain pending;
+there is no trained or personalized feed yet. See [docs/PHASE3A.md](docs/PHASE3A.md).
+`make phase3-preflight` shows prerequisites and `make phase3-exercises` opts into the core
+targets. Phase 2's current work is preserved under the explicit `phase-2-scaffold` tag.
+
 ## Start the stack
 
 Install and start [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/)
