@@ -63,3 +63,7 @@ lens-backfill:
 
 lens-evaluate:
 	uv run --locked python -m scripts.evaluate_lens
+
+.PHONY: analytics-rollup
+analytics-rollup:
+	uv run --locked python -m scripts.rollup_analytics

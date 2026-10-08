@@ -237,6 +237,10 @@ Neither requires proving what real users would prefer.
   See PHASE4.md and PHASE4_WALKTHROUGH.md. Explain-back discussion remains open.
 - **Phase 5, thin monetization:** business-account features, product data, shop filter,
   placeholder ad slots, and analytics rollups. A full ad-serving system remains separate.
+  Business profiles, owned product metadata, Shop/search filters, versioned empty ad layout,
+  source-separated UTC daily analytics and the hourly repair worker are implemented and
+  validated. See PHASE5.md and docs/reports/phase5-checks.json; earlier training/CTR exercises
+  remain separate. Explain-back discussion remains open.
 
 ### ML and operations learning checkpoints
 
@@ -271,6 +275,9 @@ the core ML logic the developer intends to learn.
 | Data | Logging to a table vs a queue; label windows and delayed feedback | Kleppmann on stream processing; Huyen |
 | Operations | Backpressure, retry policies, cache behavior, feature freshness, and rollback under simulated workloads | Kleppmann on distributed systems; Huyen on monitoring |
 | Infra | Single database vs sharding pins by ID | Kleppmann on partitioning and replication |
+| Creator analytics | Recompute UTC-day counts vs incremental aggregates and late-event repair | Kleppmann on stream processing and derived data |
+| Product catalogs | Per-pin metadata vs bulk catalog ingestion and inventory synchronization | Xu on data pipelines; Kleppmann on external sources |
+| Ad placements | Empty UI layout vs a separate ad-selection/exposure contract | Separate ads ranking project; no auctions/billing in this repo |
 
 ## 9. Out of scope for this repo
 

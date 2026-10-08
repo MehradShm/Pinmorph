@@ -105,3 +105,20 @@ nav { flex-wrap: wrap; }
 .onboarding-banner { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .75rem 1rem; background: #f6efe8; border-radius: 12px; }
 .moderation-row { padding: 1rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 16px; overflow-wrap: anywhere; }
 @media (max-width: 650px) { .crop-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.business-panel { max-width: 1000px; margin: 0 auto; }
+.business-panel > form { max-width: 520px; margin-bottom: 2rem; }
+.business-badge { background: #edf2e7; padding: .7rem; border-radius: 12px; }
+.product-details { border-block: 1px solid #ddd5c9; padding-block: .8rem; margin-block: 1rem; }
+.product-price { font-size: 1.5rem; font-weight: 700; }
+.product-price small { font-size: .8rem; font-weight: 400; }
+.product-card-price { padding: 0 .7rem .7rem; font-size: .9rem; color: #506046; }
+.ad-placeholder { break-inside: avoid; background: #efe7d9; border: 1px dashed #ab9985; border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; min-height: 200px; }
+.ad-placeholder small { text-transform: uppercase; font-size: .7rem; letter-spacing: .04em; }
+.ad-placeholder h2 { font-size: 1.4rem; margin-block: 1rem; }
+.analytics-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .7rem; margin-block: 1rem; }
+.analytics-cards > div { background: #f0ece5; border-radius: 14px; padding: 1rem; }
+.analytics-cards strong { display: block; font-size: 1.8rem; margin-top: .4rem; }
+.analytics-table { max-width: 100%; overflow-x: auto; margin-block: 1rem; }
+.analytics-table table { width: 100%; border-collapse: collapse; text-align: left; }
+.analytics-table th, .analytics-table td { padding: .7rem; border-bottom: 1px solid #ddd5c9; }
+.analytics-table caption { text-align: left; font-weight: 700; padding-block: .5rem; }

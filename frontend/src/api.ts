@@ -1,5 +1,7 @@
-export type User = { id: string; display_name: string; email: string; is_moderator?: boolean };
+export type User = { id: string; display_name: string; email: string; is_moderator?: boolean; is_business?: boolean };
+export type Product = { price: string; currency: string; availability: 'in_stock' | 'out_of_stock' | 'preorder' | 'discontinued'; merchant_url: string };
 export type Pin = {
+  product?: Product | null;
   served?: { request_id: string; position: number; impression_event_id?: string };
   id: string; title: string; description: string; source_url: string | null;
   owner_id: string | null; provenance: string; status: string;
@@ -8,7 +10,7 @@ export type Pin = {
 };
 export type Board = { id: string; name: string; pin_count: number; owner_id: string; is_secret: boolean; is_following?: boolean };
 export type Section = { id: string; name: string };
-export type Profile = { id: string; display_name: string; bio: string; follower_count: number; following_count: number; is_following: boolean; is_muted: boolean };
+export type Profile = { id: string; display_name: string; bio: string; business?: { name: string; website: string | null } | null; follower_count: number; following_count: number; is_following: boolean; is_muted: boolean };
 export type Page<T> = { items: T[]; next_cursor: string | null };
 export type FeedPage = { items: { pin: Pin; position: number }[]; next_cursor: string | null; request_id: string };
 export type PinPage = { attributed?: boolean; items: Pin[]; next_cursor: string | null; request_id: string };

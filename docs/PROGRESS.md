@@ -315,3 +315,18 @@ learning targets are preserved. Explain-back discussion has not been assumed com
 Final acceptance counts and the real Lens result are recorded in docs/reports/phase4-checks.json
 and docs/reports/phase4-lens.json. The 32-pin demo catalog and earlier isolated states are
 retained; generated validation accounts/media are cleaned by exact fixture identity.
+
+## 2026-10-07 — Phase 5 thin monetization
+
+Implemented explicit business profiles, business-owner product metadata with exact prices,
+availability and merchant links, Shop browsing/currency filtering and keyword-search shop
+filters, versioned empty home ad placements, and private creator reports from UTC daily
+rollups. The local hourly analytics worker repairs recent receipts; the owner refresh/CLI
+can rebuild older bounded periods. Canonical views/actions and app/simulator sources remain
+separate. Product data reuses the existing catalog/media/visibility/serving paths.
+
+Migration `e9b3c71d5f02` preserves Phase 4 rows and defaults existing accounts to personal.
+Module responsibilities, interactions, reporting semantics, limitations and explain-back
+questions are in PHASE5.md; decisions/revisit experiments are recorded. Final validation is
+recorded in docs/reports/phase5-checks.json. The `phase-4` historical tag is preserved and
+the implemented Phase 5 checkpoint uses branch/tag `phase-5`.

@@ -48,6 +48,9 @@ product features, the separate MIND CTR study, and simulator exercises follow th
   `make phase4-preflight` is static; `make lens-evaluate` writes real CLIP/ANN evidence.
   Shared Phase 2 and Phase 4 core checks now run normally; Phase 3A training/3B CTR remain exercises.
 - Setup and container-only checks: see README.md
+- Phase 5 business/product/Shop/placeholder ads/creator rollups: docs/PHASE5.md.
+  `make analytics-rollup` rebuilds the last seven UTC days; the local scheduler runs hourly.
+  Analytics separates served/viewed/action counts and app/simulator sources; no billing or CTR.
 
 ## Non-negotiable conventions
 

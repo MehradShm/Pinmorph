@@ -95,3 +95,18 @@ older phase; Git preserves code, not database/Redis/object-storage/model state.
 The Phase 4 runtime needs ignored model weights (`make lens-prepare`) and explicit catalog
 backfill (`make lens-backfill`) for an existing dataset. The original Phase 1 state and
 stopped simulator-lab state are preserved separately. See PHASE4.md for the current app.
+
+## Phase 5 implementation checkpoint
+
+Branch/tag `phase-5` preserves business/product/Shop/empty ad layout/creator analytics,
+migration `e9b3c71d5f02` and its analytics scheduler. `phase-4` retains the earlier code.
+To inspect it without switching the current application:
+
+```bash
+git worktree add --detach ../pinterest-lite-phase-4 refs/tags/phase-4
+```
+
+This is a recipe, not an already created worktree. Use an isolated Compose project, ports,
+image tags, database, bucket and model mount as described above; old code must not run
+against the current migrated database. Phase 5 details are in PHASE5.md. These code
+checkpoints do not mark the separate Phase 3A/3B learning exercises complete.

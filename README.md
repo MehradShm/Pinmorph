@@ -10,9 +10,13 @@ asynchronously by the RQ worker. The H&M importer accepts local dataset files; a
 clearly labeled synthetic catalog lets you try the app immediately. Ranking, impression
 logging, ML libraries, and MLflow arrive in their later phases.
 
-The current Phase 4 checkpoint implements shared baseline feeds and event attribution,
+The Phase 4 checkpoint implements shared baseline feeds and event attribution,
 Following/related discovery, CLIP Lens, optional interest onboarding, profile/board extras,
 URL image import, engagement, local digests and safety review. See [docs/PHASE4.md](docs/PHASE4.md).
+
+Phase 5 adds business accounts, product prices/availability/merchant links, Shop browsing
+and keyword filters, clearly labeled empty ad slots and owner-only daily creator analytics.
+See [docs/PHASE5.md](docs/PHASE5.md) for module interactions, usage and rollup definitions.
 
 Historical `phase-2-scaffold`, `phase-3a-scaffold` and `phase-3b-scaffold` tags preserve the
 learning skeletons. The remaining Phase 3A training/personalized-ranker and separate Phase
@@ -36,6 +40,7 @@ export DOCKER_CONTEXT=desktop-linux
 
 ```bash
 cp .env.example .env
+uv run --locked python -m scripts.prepare_lens
 docker compose up --build -d --wait
 docker compose exec api python -m scripts.seed --demo --reference-time 2026-10-07T00:00:00Z --wait 120
 curl http://localhost:8000/health/live

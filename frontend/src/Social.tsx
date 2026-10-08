@@ -95,6 +95,7 @@ export function ProfileDialog({ id, user, onClose, onAuth, onBoard, onEdited, on
   return <Modal title={profile?.display_name || 'Profile'} onClose={onClose}>
     {profile ? <>
       <h2>{profile.display_name}</h2><p className="description">{profile.bio}</p>
+      {profile.business && <p className="business-badge">Business · {profile.business.name}{profile.business.website && <> · <a href={profile.business.website} target="_blank" rel="noopener noreferrer">Website ↗</a></>}</p>}
       <div className="inline-actions">
         <button className="text-button" disabled={busy} onClick={() => showConnections('followers')}>{profile.follower_count} followers</button>
         <button className="text-button" disabled={busy} onClick={() => showConnections('following')}>{profile.following_count} following</button>

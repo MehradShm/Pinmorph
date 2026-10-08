@@ -1,5 +1,8 @@
 # Phase 4: product extensions and visual discovery
 
+This guide describes the preserved `phase-4` tag. The current app also adds Phase 5's
+business/product/Shop/creator analytics modules; see PHASE5.md for those additions.
+
 Phase 4 is implemented. This checkpoint finishes Following and related discovery, CLIP
 crop search, onboarding, image URL import, engagement, local email digests and moderation,
 in addition to the search/social/board modules from the earlier Phase 4 checkpoint.

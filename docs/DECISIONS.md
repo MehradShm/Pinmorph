@@ -278,3 +278,33 @@ consent and block/mute visibility. Stable message IDs aid inspection. SMTP send/
 cannot be atomic, so crash recovery is at least once. Revisit provider integration, recipient
 batching, scheduling and delivery deduplication separately. Keep the production-condition
 simulator in its independent project; no preference conclusions come from these fixtures.
+
+## 2026-10-07 — thin business/product boundaries
+
+Phase 5 uses explicit self-service business conversion with public name/website and
+owner-only creator tools. A product is optional one-to-one data on an owned pin, not a new
+media type. Use exact numeric prices and a bounded set of two-decimal currencies; no
+checkout, FX conversion, merchant verification or payments. Shop includes ready, visible,
+in-stock/preorder products and reuses search eligibility. Product details serialize through
+the shared pin response on all surfaces. Revisit bulk catalog ingestion and stock updates
+without changing the image/embedding pipeline.
+
+## 2026-10-07 — empty ad layout separate from organic attribution
+
+Serve a versioned configurable layout and insert labeled placeholder siblings in the home
+UI. Preserve all organic request/position identities; placeholders have no pin ID and never
+emit organic or paid impressions. A real ad selection, exposure, auction and billing
+contract belongs in the separate ads project. Revisit layout via ADS_CONFIG independently
+of candidate retrieval, scoring and the simulator's user-action policies.
+
+## 2026-10-07 — recomputable creator analytics baseline
+
+Build UTC-day counts from canonical served items, views and accepted closeup/save/outbound
+events, with occurrence and receipt cutoffs. Keep app versus simulator sources separate;
+exclude imported history and mutable board state. Upsert replacement counts under one
+transaction advisory lock, including explicit zero rows. Report coverage gaps rather than
+treat missing data as measured zero. An hourly worker repairs seven days; bounded owner
+refresh or the CLI repairs older periods. The baseline favors auditable correctness over
+incremental complexity; local SQL scheduling stays outside the image queue. Revisit streaming
+rollups, partitioning, durable jobs and retention. These counts are not CTR, conversions or
+an immutable financial ledger. Explain-back discussion remains open.
