@@ -17,3 +17,11 @@ mlruns/
 node_modules/
 test-results/
 playwright-report/
+/docs/reports/
+/reports/
+/artifacts/
+/checkpoints/
+/models/
+/logs/
+coverage.xml
+.coverage.*

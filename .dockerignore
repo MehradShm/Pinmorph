@@ -10,5 +10,10 @@
 .coverage
 data
 mlruns
+docs/reports
+reports
+artifacts
+checkpoints
+logs
 node_modules
 frontend

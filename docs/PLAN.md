@@ -225,7 +225,7 @@ Neither requires proving what real users would prefer.
   vectors, time-correct shared features, blended HNSW/baseline candidates, fitted JSON
   ranker, diversity, cold fallback, configuration activation/rollback and recorded
   synthetic baseline/retrieval comparisons. Real-data quality and explain-back discussion
-  remain open. See PHASE3A.md, PHASE3A_WALKTHROUGH.md and reports/phase3a-*.json.
+  remain open. See PHASE3A.md and PHASE3A_WALKTHROUGH.md; generated reports remain local.
 - **Phase 3B, CTR and operations learning tracks:** build the separate MIND CTR pipeline;
   complete the minimum simulator adapter and baseline reset. When the separate simulator
   is available, run the operational exercises incrementally. MIND work can proceed without
@@ -238,13 +238,14 @@ Neither requires proving what real users would prefer.
   Current status: implementation complete, including shared serving/events, Following,
   public related pins, pinned image-only CLIP crop retrieval, onboarding/settings, URL image
   import, comments/reactions/share/hide/report, local SMTP digests and moderation/classifier/
-  duplicate gates. Exact/HNSW agreement and latency are recorded in docs/reports/phase4-lens.json.
+  duplicate gates. Exact/HNSW agreement and latency are documented in PHASE4.md;
+  detailed generated reports remain local.
   See PHASE4.md and PHASE4_WALKTHROUGH.md. Explain-back discussion remains open.
 - **Phase 5, thin monetization:** business-account features, product data, shop filter,
   placeholder ad slots, and analytics rollups. A full ad-serving system remains separate.
   Business profiles, owned product metadata, Shop/search filters, versioned empty ad layout,
   source-separated UTC daily analytics and the hourly repair worker are implemented and
-  validated. See PHASE5.md and docs/reports/phase5-checks.json; earlier training/CTR exercises
+  validated. See PHASE5.md; generated reports remain local, and earlier training/CTR exercises
   remain separate. Explain-back discussion remains open.
 
 ### ML and operations learning checkpoints

@@ -173,13 +173,17 @@ full browser suite with the baseline config, then clean its recorded accounts us
 
 ## Measured result and limits
 
-[phase3a-checks.json](reports/phase3a-checks.json) records 163 passing unit checks, 60 unique
+Generated reports and fitted artifacts remain local and are excluded from GitHub history.
+The commands above reproduce checks and generate fresh evidence; historical measurements
+below describe the validated local run.
+
+Local `phase3a-checks.json` records 163 passing unit checks, 60 unique
 integration checks (59 in the full regression plus the added import acceptance), 10 baseline
 browser checks and 2 personalized desktop/mobile checks. Ruff, TypeScript/Vite, schema drift,
 repeat-backfill idempotence and exact cleanup also passed. The 15 skipped backend cases are
 the independent Phase 3B CTR exercises.
 
-[phase3a-evaluation.json](reports/phase3a-evaluation.json) records 97 authored fixture saves,
+Local `phase3a-evaluation.json` records 97 authored fixture saves,
 485 examples and 25 final-test queries on the 32 real fused demo vectors. The 12-day trace
 uses a fixture chronology after vector availability and is never inserted into app history.
 It validates the mechanics without building a simulator preference model.
@@ -197,7 +201,7 @@ The ranker improves ordering by NDCG but misses more top-10 targets than popular
 Diversity removes similar pins and loses recall on this authored repetitive trace. All
 rankers see the same eligible catalog; the model is fixed while earlier test actions can
 update history. This establishes neither a real-user benefit nor measured CTR.
-[phase3a-retrieval.json](reports/phase3a-retrieval.json) records 16 pin/mean queries, top-10
+Local `phase3a-retrieval.json` records 16 pin/mean queries, top-10
 exact/HNSW agreement 1.0 and median exact/ANN time about 4.83/17.46 ms. The actual query plan
 uses `ix_personalized_clip_hnsw` with scans/sorts forced off; this tiny corpus shows no ANN
 speed advantage. Full-catalog ranking evaluation does not measure large-catalog shortlist
@@ -213,9 +217,11 @@ logistic versus LightGBM, duplicate/creator limits versus MMR, and measured roll
 the separate simulator's later operations exercises. Explain-back questions and the
 statement walkthrough are in PHASE3A_WALKTHROUGH.md; discussion is not assumed complete.
 
-The checked local app uses `data/ml/phase3a-validation-v3/feed-config.json` and model
+The original checked local app uses `data/ml/phase3a-validation-v3/feed-config.json` and model
 `ranker:logreg:651ebd20368e5b6f`. This is an explicitly synthetic-validation model. The
 baseline configuration remains the source default; use the documented rollback command.
+The GitHub checkout starts with that baseline and requires a new local training run before
+activating personalization; the original validation files are not included.
 
 Primary references: [CLIP implementation](https://github.com/openai/CLIP),
 [StandardScaler](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html),

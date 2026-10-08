@@ -1,13 +1,22 @@
 # Revisiting an earlier phase
 
-The active branch is `phase-3a-completion`; earlier work branches remain available.
+The latest implementation is on GitHub's `main`; `phase-3a-completion` and earlier work
+branches remain available.
 Annotated tags preserve `phase-1`, `phase-2-scaffold`, `phase-3a-scaffold`, and
 `phase-3b-scaffold`. The scaffold
 tags are explicitly unfinished learning checkpoints, not completed milestones.
 The Phase 1 tag is the validated core loop;
 its tag message explicitly records that
 the developer's real H&M import is still pending. There is no separate Phase 0 snapshot.
-Everything is local; no GitHub remote has been configured or published.
+The project is published at https://github.com/MehradShm/Pinmorph. Generated reports and
+fitted artifacts are excluded from every published branch and tag. Filtering those files
+changes some published commit hashes; milestone names and source code are preserved.
+
+The independent GitHub checkout is `../pinterest-lite-github` beside the original
+`pinterest-lite` directory. Make future commits and pushes from that checkout. The original
+checkout retains local reports and its original checkpoints; do not push its unfiltered
+history. Datasets, CLIP weights, fitted models, MLflow runs, browser output and secrets
+remain ignored. The small synthetic test fixtures and required CLIP tokenizer stay in Git.
 
 Use an immutable tag for each accepted milestone, and branches for ongoing work. A worktree
 lets you open an older version beside the current version without switching the active code.
@@ -115,8 +124,8 @@ checkpoints do not mark the separate Phase 3A/3B learning exercises complete.
 
 Branch `phase-3a-completion` completes the previously preserved Phase 3A skeleton. The
 `phase-3a-personalization` tag preserves the validated implementation, migration
-`72aa31f096bc`, encoder/runtime locks and synthetic ranking/retrieval reports. Earlier
-`phase-5` and `phase-3a-scaffold` tags remain unchanged. To inspect the scaffold beside it:
+`72aa31f096bc` and encoder/runtime locks. Synthetic ranking/retrieval reports remain local.
+Earlier `phase-5` and `phase-3a-scaffold` milestones remain available. To inspect the scaffold beside it:
 
 ```bash
 git worktree add --detach ../pinterest-lite-phase-3a-scaffold refs/tags/phase-3a-scaffold
@@ -124,9 +133,10 @@ git worktree add --detach ../pinterest-lite-phase-3a-scaffold refs/tags/phase-3a
 
 This is a recipe, not an already created worktree. Use separate stores/ports/images for
 historical execution: the current readiness check expects the new schema. Git preserves
-the tiny validated JSON ranker/report/audit in `docs/reports`; local active configs, CLIP
-weights and MLflow runs remain external ignored state. Re-run training to create a new
-artifact/config with its own hash, or copy the documented saved validation artifact into
-your isolated runtime. PHASE3A.md documents configuration activation and baseline rollback.
+source code and lockfiles; the tiny validated JSON ranker/report/audit in `docs/reports`,
+local active configs, CLIP weights and MLflow runs remain external ignored state in this
+GitHub copy. Re-run training to create a new artifact/config with its own hash, or copy a
+local validation artifact into your isolated runtime. PHASE3A.md documents configuration
+activation and baseline rollback.
 This checkpoint establishes mechanics on synthetic history, not real-data quality or
 completed explain-back discussion. Phase 3B remains unfinished.

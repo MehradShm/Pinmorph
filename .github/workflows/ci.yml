@@ -17,7 +17,7 @@ jobs:
         with:
           version: "0.12.23"
           enable-cache: true
-      - run: uv sync --locked
+      - run: uv sync --locked --group ml
       - run: make check
       - uses: actions/setup-node@v4
         with:
@@ -29,7 +29,8 @@ jobs:
       - run: npm run build
         working-directory: frontend
       - run: docker compose config --quiet
-      - run: docker compose up --build -d --wait --wait-timeout 120
+      - run: uv run --locked --group ml python -m scripts.prepare_lens
+      - run: docker compose up --build -d --wait --wait-timeout 180
       - run: make integration
       - run: make seed-demo
       - run: npx playwright install --with-deps chromium

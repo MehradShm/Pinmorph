@@ -162,8 +162,8 @@ Real-service acceptance covers role/ownership/origin checks, product serializati
 stock/time/visibility filters, retry-safe view/action counts, source separation, late receipt
 repair, zero activity and additive migration downgrade/re-upgrade. Browser checks exercise
 conversion, editing, Shop, actual viewport telemetry, merchant clicks, analytics, stock
-changes and empty ad placement on desktop/mobile. Final evidence is in
-`docs/reports/phase5-checks.json`.
+changes and empty ad placement on desktop/mobile. Final evidence is retained locally in
+`docs/reports/phase5-checks.json`; generated reports are excluded from GitHub.
 
 Explain back: Why is a returned pin different from a view? How does recomputation include a
 late receipt without double counting earlier events? Why should simulator activity have

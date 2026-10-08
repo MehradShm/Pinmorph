@@ -165,7 +165,7 @@ never enter the same comparison. The shipped recipe has a schema-managed partial
 cosine index on `embedding::vector(512)`. Its explicit DDL is tested because Alembic does
 not reliably round-trip that cast/operator-class expression.
 
-`docs/reports/phase4-lens.json` records the real 32-item demo corpus, its fingerprint,
+The local, Git-ignored `docs/reports/phase4-lens.json` records the real 32-item demo corpus, its fingerprint,
 16 whole/cropped queries, top-10 IDs, overlap, measured elapsed latency and index plan.
 The run produced mean top-10 overlap **1.0**, median exact computation **9.98 ms**, median
 ANN SQL call **24.24 ms**, and median image encoding **276.75 ms**. Exact timing excludes
