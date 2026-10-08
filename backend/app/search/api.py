@@ -23,6 +23,7 @@ def search_query(
     provenance: Annotated[str | None, Query(max_length=40)] = None,
     created_after: AwareDatetime | None = None,
     created_before: AwareDatetime | None = None,
+    shop_only: bool = False,
 ) -> SearchQuery:
     try:
         return SearchQuery(
@@ -31,6 +32,7 @@ def search_query(
             provenance=provenance,
             created_after=created_after,
             created_before=created_before,
+            shop_only=shop_only,
         )
     except ValidationError as exc:
         raise HTTPException(422, "Provide search words and valid filters/date range") from exc

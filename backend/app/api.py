@@ -41,7 +41,10 @@ mutations = [Depends(check_origin)]
 
 
 def pin_out(pin: Pin) -> PinOut:
+    from app.monetization.schemas import ProductOut
+
     return PinOut(
+        product=ProductOut.model_validate(pin.product) if pin.owner_id and pin.product else None,
         id=pin.id,
         title=pin.title,
         description=pin.description,

@@ -18,6 +18,7 @@ from app.social.policy import visible_owner
 class SearchQuery(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     q: str = Field(min_length=2, max_length=200)
+    shop_only: bool = False
     owner_id: str | None = Field(default=None, min_length=36, max_length=36)
     provenance: Literal["manual_upload", "synthetic_demo", "hm"] | None = None
     created_after: AwareDatetime | None = None
@@ -96,8 +97,13 @@ def eligible(query: SearchQuery, viewer: User | None, as_of: datetime):
         Pin.id.not_in(hidden),
         Pin.status == "ready",
         Pin.available_at <= as_of,
+        Pin.created_at <= as_of,
         visible_owner(Pin.owner_id, viewer, include_muted=True),
     )
+    if query.shop_only:
+        from app.monetization.shopping import shop_condition
+
+        statement = statement.where(shop_condition())
     if query.owner_id:
         statement = statement.where(Pin.owner_id == query.owner_id)
     if query.provenance:

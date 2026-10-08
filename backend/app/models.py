@@ -17,9 +17,10 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import TSVECTOR
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.monetization.models import PinProduct
 
 
 def new_id() -> str:
@@ -37,6 +38,9 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(Text)
     display_name: Mapped[str] = mapped_column(String(80))
     is_moderator: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    is_business: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    business_name: Mapped[str | None] = mapped_column(String(120))
+    business_website: Mapped[str | None] = mapped_column(Text)
     bio: Mapped[str] = mapped_column(String(500), default="", server_default="")
     source_key: Mapped[str | None] = mapped_column(String(200), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -64,6 +68,9 @@ class Pin(Base):
         UniqueConstraint("owner_id", "pixel_hash", name="uq_pins_owner_pixel_hash"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    product: Mapped[PinProduct | None] = relationship(
+        lazy="selectin", passive_deletes=True, cascade="all, delete-orphan"
+    )
     owner_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text, default="")

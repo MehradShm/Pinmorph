@@ -22,6 +22,7 @@ from app.feed.service import FeedService
 from app.health import check_dependencies, check_lens, check_postgres
 from app.learning import LearningExercisePending
 from app.logging.service import EventIngestor
+from app.monetization.api import router as monetization_router
 from app.operations.api import router as operations_router
 from app.operations.metrics import RequestMetrics
 from app.product.api import router as product_router
@@ -87,6 +88,7 @@ def create_app(
     application.include_router(boards_router)
     application.include_router(discovery_router)
     application.include_router(product_router)
+    application.include_router(monetization_router)
     application.include_router(operations_router)
 
     @application.exception_handler(LearningExercisePending)

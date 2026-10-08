@@ -18,6 +18,7 @@ x-app: &app
     LOG_LEVEL: ${LOG_LEVEL:-INFO}
     FEED_CONFIG: '${FEED_CONFIG:-{}}'
     DISCOVERY_CONFIG: '${DISCOVERY_CONFIG:-{}}'
+    ADS_CONFIG: '${ADS_CONFIG:-{}}'
     SIM_MODE: "false"
     COOKIE_SECURE: ${COOKIE_SECURE:-false}
     TRUSTED_ORIGINS: '${TRUSTED_ORIGINS:-["http://localhost:8080","http://127.0.0.1:8080","http://localhost:5173","http://127.0.0.1:5173"]}'
@@ -171,6 +172,15 @@ services:
       context: .
       target: checks
     profiles: ["checks"]
+
+  analytics-worker:
+    <<: *app
+    command: ["python", "-m", "app.monetization.worker"]
+    init: true
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:

@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.discovery.config import DiscoveryConfig
 from app.experiments.config import FeedConfig
+from app.monetization.schemas import AdsConfig
 
 
 class Settings(BaseSettings):
@@ -25,6 +26,7 @@ class Settings(BaseSettings):
     sim_control_token: SecretStr | None = None
     feed_config: FeedConfig = Field(default_factory=FeedConfig)
     discovery_config: DiscoveryConfig = Field(default_factory=DiscoveryConfig)
+    ads_config: AdsConfig = Field(default_factory=AdsConfig)
     health_timeout_seconds: float = Field(default=2.0, gt=0, le=10)
     upload_max_bytes: int = 12 * 1024 * 1024
     image_max_pixels: int = 24_000_000

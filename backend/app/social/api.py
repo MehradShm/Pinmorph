@@ -26,6 +26,11 @@ def profile_out(db, profile: User, viewer: User | None) -> dict:
         "id": profile.id,
         "display_name": profile.display_name,
         "bio": profile.bio,
+        "business": (
+            {"name": profile.business_name, "website": profile.business_website}
+            if profile.is_business
+            else None
+        ),
         "follower_count": db.scalar(
             select(func.count()).select_from(UserFollow).where(UserFollow.followed_id == profile.id)
         ),

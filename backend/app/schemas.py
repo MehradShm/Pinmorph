@@ -3,6 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
+from app.monetization.schemas import ProductOut
+
 
 class Credentials(BaseModel):
     email: str = Field(max_length=254)
@@ -33,6 +35,7 @@ class UserOut(BaseModel):
     id: str
     email: str | None
     is_moderator: bool = False
+    is_business: bool = False
     display_name: str
 
 
@@ -62,6 +65,7 @@ class PinMetadata(BaseModel):
 
 
 class PinOut(BaseModel):
+    product: ProductOut | None = None
     id: str
     title: str
     description: str
