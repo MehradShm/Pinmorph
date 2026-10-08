@@ -112,7 +112,7 @@ action sequences in ranking), Manas (search engine).
 
 | Stage | First implementation | Revisit upgrades |
 |---|---|---|
-| Pin embeddings | Pretrained CLIP (open_clip) on image plus title, stored in pgvector | Fine-tune on co-saves; graph embeddings in the spirit of PinSage |
+| Pin embeddings | Pinned local CLIP ViT-B/32 on image plus title, stored in pgvector | Image-only/OpenCLIP recipes, fine-tune on co-saves; graph embeddings in the spirit of PinSage |
 | User embeddings | Mean of last N engaged pin embeddings, time-decayed | Several embeddings per user via clustering (PinnerSage idea); two-tower model |
 | Candidate retrieval | ANN from user embedding + popular/recent, blended with quotas; popularity fallback for users without history | Followed boards in phase 4; co-save graph random walks (Pixie idea); learned blending |
 | Engagement ranking | Logistic regression on similarity, pin age, historical popularity, and user activity; imported positives plus sampled negatives | LightGBM; small deep model over recent actions (TransAct idea); observed-impression CTR objective and calibration when suitable data exists |
@@ -221,6 +221,11 @@ Neither requires proving what real users would prefer.
   evaluation. Done when the feed is personalized, cold-start fallback works, a model swap
   is a config change, and a reproducible report compares the model with its baseline.
   An honestly explained lack of improvement is an acceptable learning result.
+  Current status: implementation complete on `phase-3a-completion`, with real fused CLIP
+  vectors, time-correct shared features, blended HNSW/baseline candidates, fitted JSON
+  ranker, diversity, cold fallback, configuration activation/rollback and recorded
+  synthetic baseline/retrieval comparisons. Real-data quality and explain-back discussion
+  remain open. See PHASE3A.md, PHASE3A_WALKTHROUGH.md and reports/phase3a-*.json.
 - **Phase 3B, CTR and operations learning tracks:** build the separate MIND CTR pipeline;
   complete the minimum simulator adapter and baseline reset. When the separate simulator
   is available, run the operational exercises incrementally. MIND work can proceed without
@@ -251,11 +256,11 @@ the core ML logic the developer intends to learn.
 | Checkpoint | Baseline or invariant | Explain-back outcome |
 |---|---|---|
 | Logging and labels | A small known request/view/action fixture, including retries and unseen items | Implemented and validated with concurrent retry/out-of-order fixtures; explain-back questions are in PHASE4_WALKTHROUGH.md, discussion pending |
-| Embeddings and retrieval | Popularity/recency; exact similarity on a small subset to check ANN recall | Pending: Phase 3A contracts/storage and toy targets are ready; explain user history cutoff, cold start, and accuracy versus latency after core implementation |
-| Engagement ranker | Unranked candidate blend or similarity ordering, evaluated on the same candidates | Pending: manifest/JSON artifact schema and scoring targets are ready; explain sampling, point-in-time features, and ranking versus CTR after fitting |
-| Reranker | Same ranked list without reranking | Pending: duplicate/creator-cap skeleton and target are ready; explain diversity and relevance tradeoffs after implementation |
+| Embeddings and retrieval | Popularity/recency; exact similarity on a small subset to check ANN recall | Implemented real image/title vectors, decay, blend and cold fallback; exact/HNSW top-10 agreement 1.0 on 16 queries/32 demo pins, exact faster. Explain-back and real-data/scale work open |
+| Engagement ranker | Unranked candidate blend or similarity ordering, evaluated on the same candidates | Implemented fitting/scoring and fixed-candidate synthetic comparison: recall@10 0.60 vs popularity 0.64, NDCG 0.319 vs 0.297. Synthetic mechanics only; explain-back and real-data quality open |
+| Reranker | Same ranked list without reranking | Implemented duplicate/creator limits; synthetic recall falls 0.60 to 0.44. Record this diversity tradeoff; explain-back open |
 | MIND CTR | Training-period constant click-rate predictor | Pending: Phase 3B reader/contracts/artifact tools and toy targets are ready; explain label source, group splitting, log loss/calibration after fitting and a real-data comparison |
-| Model selection and rollout | Pinned version and deterministic experiment assignment | Trace which model served an item and demonstrate a configuration rollback |
+| Model selection and rollout | Pinned version and deterministic experiment assignment | Implemented validation-only C selection, checksummed/version-checked activation, actual warm/cold snapshots and baseline rollback. Explain-back open |
 | Operational exercise | Known steady workload and explicitly expected failure/recovery behavior | Pending: diagnostics, disposable baseline setup/export and exercise worksheet are ready; minimum run adapter/reset and measured workloads are still required before diagnosis/recovery acceptance |
 | Following and related discovery | Deterministic visible social union; public co-board counts versus similarity on fixed candidates | Implemented and validated social union/public-board/privacy fixtures; similarity fallback uses the pinned Lens recipe. Explain-back discussion pending |
 | Lens crop retrieval | Exact cosine retrieval on the same eligible versioned corpus | Implemented pinned image-only CLIP and exact/HNSW comparison: mean top-10 overlap 1.0 on 16 crops / 32 demo pins; exact computation faster. Relevance/scale and explain-back discussion remain |

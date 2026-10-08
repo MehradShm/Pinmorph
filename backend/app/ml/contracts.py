@@ -1,11 +1,14 @@
 """Content, history, and evaluation inputs independent of a specific ML library."""
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, FiniteFloat, model_validator
 
-from app.feed.contracts import FeedContext
+if TYPE_CHECKING:
+    from app.feed.contracts import FeedContext
 
 
 class Record(BaseModel):
@@ -70,6 +73,9 @@ class Interaction(Record):
     known_at: AwareDatetime
     provenance: Literal["imported_purchase_proxy", "observed_app", "simulator"]
     action: Literal["purchase_proxy", "save", "closeup", "outbound_click"] = "purchase_proxy"
+    import_run_id: str | None = None
+    # Raw receipt is retained even when source chronology is explicitly replayed offline.
+    received_at: AwareDatetime | None = None
 
     @model_validator(mode="after")
     def validate_action_provenance(self):
@@ -88,6 +94,11 @@ class TrainingExample(Record):
     ]
     features: dict[str, FiniteFloat]
     sample_weight: FiniteFloat = Field(default=1, gt=0)
+    target_event_id: str | None = None
+    sampling_seed: int | None = None
+    candidate_universe_sha256: str | None = None
+    candidate_universe_size: int | None = None
+    negative_shortfall: int = 0
 
     @model_validator(mode="after")
     def reject_display_position(self):

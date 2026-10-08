@@ -1,186 +1,223 @@
-# Phase 3A: personalized ML v1
+# Phase 3A: personalized recommendations and evaluation
 
-> Phase 4 completes shared Phase 2 cores, vector normalization, exact/pgvector retrieval
-> and an independent pinned image-only CLIP recipe for Lens. The image/title-fusion, user
-> embedding, training, personalized ranking and diversity exercises below remain separate.
+Status: **implementation complete; validated with real CLIP inference and an explicitly
+synthetic interaction trace.** The original Phase 3A algorithm exercises now run in the
+ordinary test suite. Real H&M data and real-user recommendation quality remain unmeasured.
+Explain-back discussion is open. Phase 3B CTR and the simulator adapter remain separate.
 
-Status: **started; contracts, configuration, embedding storage, JSON artifacts, and learning
-targets implemented. Core ML algorithms remain exercises.** Phase 2's core is still pending.
-The current UI continues the Phase 1 catalog; there is no personalized feed or trained model.
-Phase 3B (MIND CTR and production-operation exercises) is a separate later track.
+## What each component does
 
-## Goal and dependencies
-
-The first finish line is a reproducible, personalized feed with cold-start fallback and a
-measured comparison to recency/popularity. An honestly explained result that does not improve
-the baseline is acceptable. The sampled implicit-feedback task is an engagement score;
-its probability output is not measured CTR.
-
-Pure normalization, user-vector, exact-retrieval, split, scoring, reranking, and metric
-exercises can be developed on toy fixtures now. End-to-end serving additionally requires
-Phase 2's baseline features, experiment assignment, atomic serving snapshots, and event
-ingestion/UI telemetry. Actual training requires declared positive history, pinned content
-embeddings, and ML runtime dependencies. The 32 demo pins have no purchase history.
-
-## What is implemented
-
-| Component | Files | Purpose and current limit |
+| Component | Implementation | Goal |
 |---|---|---|
-| ML input contracts | `app/ml/contracts.py` | PinEmbedder/UserEmbedder protocols; typed content, vectors, histories, interactions and examples; finite numbers, aware times and explicit provenance |
-| Personalization configuration | `app/ml/config.py` | Embedding identity/dimension/fusion, history decay, candidate quotas and diversity limits; configuration is not activated in the feed |
-| Training manifest | Same file | Cutoffs, seed, sampling policy, source weights, availability policy, ties, fixed-model evaluation policy and import IDs |
-| Vector schema | `app/ml/models.py`, migration `cdfce4ed4eea` | Embedding-model metadata and pin/content/model records; model/dimension consistency, unit vectors and unique identities |
-| JSON ranker artifacts | `app/ml/artifacts.py` | Validated ordered features, coefficients, scaling, provenance and library versions; checksummed load and atomic no-overwrite publication |
-| Core skeletons | `embeddings.py`, `retrieval.py`, `ranking.py`, `training.py`, `evaluation.py` | Named exercises with precise behavior; they explicitly raise pending instead of producing vectors, rankings, metrics or models |
-| Read-only preflight | `scripts/phase3_preflight.py` | Static TODO inventory, installed package versions, optional DB counts and known missing prerequisites; not an acceptance certificate |
-| Checks | `test_phase3_scaffold.py`, `test_phase3_storage_integration.py`, `test_phase3_exercises.py` | Artifact/provenance/schema checks and opt-in known-answer core targets |
+| Pin encoder | `ml/embeddings.py`, `infra/lens/server.py` | Encode canonical image pixels and the title, normalize each, average 50/50 and normalize again |
+| Immutable vectors | `ml/vector_store.py`, `ml/models.py`, migration `72aa31f096bc` | Keep content/model versions and known times; index the fused 512-dimensional space separately from Lens |
+| Media/backfill path | `app/media.py`, `scripts/backfill_personalization.py` | Generate both image-only Lens and image/title recommendation vectors on uploads; fill existing ready pins idempotently |
+| History adapter | `ml/data.py` | Load declared imported purchases and resolved observed actions; keep occurrence, actual receipt and availability separate |
+| User encoder | `ml/embeddings.py` | Normalize a time-decayed mean of prior known interactions; empty/canceling histories use a baseline |
+| Shared features | `ml/features.py` | Use one implementation offline and online for similarity, age, separate save/purchase counts and history length |
+| Candidate blend | `ml/retrieval.py` | Retrieve HNSW, popularity and recency quotas, merge contributors, deduplicate and fill shortfalls |
+| Training examples | `ml/training.py` | Chronological splits, explicit purchase/save positives and reproducible sampled-unobserved negatives |
+| Fitting and tracking | `ml/training.py`, `scripts/train_personalization.py` | Train-only scaling, weighted logistic regression, validation-only C selection, JSON publication and MLflow |
+| Scoring | `ml/ranking.py` | Load pinned scaling and coefficients, score without fitting, preserve inputs and sort ties by pin ID |
+| Diversity | Same file | Preserve rank order while removing duplicate IDs/near-identical vectors and limiting known creators |
+| Evaluation | `ml/evaluation.py`, `ml/offline.py` | Compare fixed eligible candidate sets, Recall@k, NDCG@k and coverage; separate cold/warm cohorts |
+| Activation | `experiments/config.py`, `feed/service.py` | Validate an explicitly selected artifact and recipe; record actual ranker, versions, hash, features and fallback reason |
 
-`pgvector==0.4.2` and its NumPy dependency are locked and installed. Torch, OpenCLIP,
-scikit-learn and MLflow are not installed; no pretrained weights are downloaded. The
-inference/training runtime must be pinned before running those exercises, using a suitable
-local or Linux container environment. No optional ML worker or model activation path exists yet.
+All paths are relative to `backend/app` unless a scripts/infra prefix is shown. Existing
+candidate-source, ranker, reranker and embedder interfaces remain replaceable.
+[PHASE3A_WALKTHROUGH.md](PHASE3A_WALKTHROUGH.md) follows the core statements and alternatives.
 
-## Intended interactions after completing the exercises
+## How the parts interact
 
 ```mermaid
 flowchart TD
-    P[Pin image and title] --> V[CLIP embedding job and versioned vectors]
-    H[Prior imported or observed history] --> U[Time-decayed user embedding]
-    V --> U
-    U --> C[ANN plus popular/recent candidates]
-    C --> R[Artifact-backed logistic ranker]
-    R --> D[Near-duplicate and creator-cap reranker]
-    D --> F[Phase 2 serving snapshots and UI]
-    H --> T[Time-correct splits and negative sampling]
-    T --> M[Train-only scaling and fitting]
-    M --> A[JSON artifact and MLflow run]
-    A --> R
-    R --> E[Offline comparison on fixed candidates]
+  P[Upload or ready-pin backfill] --> C[Verified CPU CLIP image and title]
+  C --> V[Immutable fused vectors and HNSW index]
+  E[Known prior purchases or actions] --> H[History adapter and decayed user vector]
+  V --> H
+  H --> B[ANN plus popularity and recency candidates]
+  E --> F[Shared point-in-time features]
+  V --> F
+  F --> B
+  B --> R[Checksummed artifact scorer]
+  R --> D[Duplicate and creator limits]
+  D --> S[Atomic serving snapshots and Discover UI]
+  E --> T[Chronological examples and sampled negatives]
+  F --> T
+  T --> M[Train-only scaling and validation selection]
+  M --> A[JSON artifact and MLflow run]
+  A --> R
+  A --> Q[Fixed-model final-test comparison]
 ```
 
-These arrows describe the planned data flow. The schemas/artifact tools work now; the core
-functions and their feed/background-job wiring are pending. A training run must not
-automatically activate its artifact. Before registry activation, validate model hash,
-embedding/feature versions and dimensions; persist the actual versions in Phase 2 records.
+The API does no CLIP inference or training on a feed request. Upload workers and explicit
+backfill generate vectors. Serving uses the stored vectors, available history and a JSON
+artifact. Fitting writes a new run directory; it never changes the active feed. A new user
+gets the configured baseline; prior saves, closeups and source clicks can build a user
+vector. Only saves/purchase proxies are positive training targets.
 
-## Learning exercises and alternatives
+## Recipe, time and label contracts
 
-1. **Normalization:** implement unit-vector conversion and explicit rejection of empty,
-   zero-norm and nonfinite inputs. The toy `(3,4)` vector has expected result `(0.6,0.8)`.
-2. **Pin embeddings:** use pretrained OpenCLIP ViT-B-32 and the selected LAION checkpoint,
-   evaluation preprocessing/inference mode, normalize image/title outputs, take the weighted
-   mean and normalize again. Default dimension is 512 and image weight is 0.5. Record the
-   exact weight hash and library/preprocessing/text policy. Alternative: image-only embeddings,
-   then a learned fusion or fine-tuned encoder. Validate real batches before claiming CLIP works.
-3. **User embeddings:** select the last N eligible prior interactions, apply exponential
-   decay using a recorded half-life, average and normalize. Default N=50, half-life=168h.
-   N is a soft cap: retain the complete boundary timestamp group. Strictly exclude current-time
-   ties, future occurrence, late availability and other users.
-   Empty/canceling history returns None and uses cold-start fallback. Alternative: multiple
-   interest vectors or a learned user encoder.
-4. **Exact retrieval:** cosine similarity on a small eligible same-model subset, deterministic
-   ties and top-k. This is the reference against which ANN recall is measured.
-5. **ANN retrieval:** create a per-model/version/dimension HNSW expression/partial index and
-   a matching query, with availability filtering and latest-known content revisions. There
-   is no ANN index yet. Compare recall and latency to exact retrieval on the same queries;
-   two-dimensional schema fixtures do not establish retrieval performance.
-6. **Candidate blend:** default pool=100 with 70% ANN, 15% popularity and 15% recency; allocate
-   deterministic quotas, deduplicate, preserve source names and backfill shortfalls. No-history
-   users use the configured baseline. Alternative: learned blending or graph candidates.
-7. **Splits:** use half-open chronological train/validation/test ranges, keep source timestamp
-   ties together, and exclude outside-range rows. Splits precede fitting any transform.
-8. **Examples:** target positives are imported purchases and observed/simulated saves;
-   closeups/source clicks may inform history but are not the v1 positive target. Add seeded
-   eligible sampled-unobserved negatives. Build
-   features only from prior available history; do not consult future outcomes to remove a
-   negative. Record the universe, seed, ratios, shortfalls and source weights. False negatives
-   remain a limitation of this proxy task. Unseen served pins are not observed negatives.
-9. **Training:** fit scaling and weighted logistic regression using the training period;
-   use validation for selection, keep final test separate, reject empty/single-class input,
-   export the JSON artifact and track the manifest/run in MLflow. Alternative: LightGBM.
-10. **Ranking:** use artifact feature order and train-only means/scales, then stable logistic
-    scoring and ordering. V1 features: similarity, age_hours, observed_save_count,
-    imported_purchase_count, user_history_count. Position is excluded. Keep original values
-    in served snapshots so online inputs can be compared to offline inputs.
-11. **Reranking:** preserve ranked order while suppressing near-duplicate vectors and capping
-    known creators. Unknown owner IDs do not all share one creator bucket. Alternative:
-    MMR diversity; compare the same list with and without reranking.
-12. **Evaluation:** recall@k, binary NDCG@k and eligible-catalog coverage; empty target/catalog
-    cases are undefined (None), not zero-valued observations to average. Record candidate
-    policy, cohorts, eligibility, model/feature versions and query count. Compare identical
-    candidate sets and target definitions. Later observed-impression CTR uses its own labels.
+The recommendation space is `embedder:clip-image-title:v1`; Lens keeps its independent
+`embedder:clip-image-crop:v1`. Both use the verified OpenAI ViT-B/32 checkpoint with SHA256
+`40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af`. This replaces the
+scaffold's proposed LAION checkpoint with the already pinned local runtime. Titles use
+CLIP's tokenizer, at most 75 content tokens plus start/end tokens; preprocessing is
+`openai-clip:eval224:v1`. The runtime uses Torch 2.6 CPU in evaluation/inference mode.
+A changed fusion, tokenizer, checkpoint or preprocessing requires a new recipe version.
 
-## Availability and leakage policy
+History occurrence **and known time must be strictly before the feature cutoff**. N=50 is
+an initial soft limit: all events tied at the boundary remain. The half-life is 168 hours;
+relative decay avoids underflow without changing the normalized direction. Opposing vectors
+can cancel and deliberately return no user vector. Serving validates the history policy
+against the trained artifact.
 
-Imported source interactions may be years older than the date we load them. Two policies
-must remain distinguishable:
+Pending actions are excluded. A resolved action becomes available after its own receipt,
+its canonical impression receipt and any explicitly referenced alias receipt. Raw action
+receipt stays intact. Replaying an old cutoff therefore cannot use a later reconciliation.
+Baseline save counts use the same resolution cutoff.
 
-- **recorded_receipt:** live/delayed-event history is available only after its actual receipt
-  and occurrence. A backdated client/simulator event is not known earlier just because its
-  occurrence time is old. Live pins and computed vectors also have known times.
-- **historical_import_replay:** offline source-only replay may map the imported dataset's
-  chronology to replay availability, preserving original receipt metadata separately. The
-  manifest permits this policy only for declared imported purchase proxies and exact import
-  runs. The source adapter and point-in-time feature builder remain core work. Pretrained
-  content vectors may represent content available at the example time, under an explicit
-  fixed-content evaluation policy; this does not imply the live embedding job ran then.
+`recorded_receipt` keeps live receipt availability. `historical_import_replay` requires exact
+import IDs, only purchase proxies, and preserves raw receipt while mapping source chronology
+to offline known times. `label_known_through` records dataset extraction time; set it to the
+actual extraction time for imports received after their historical test period.
+`fixed_import_content` explicitly allows the imported catalog's content representations
+at source availability times; it never changes live vector/pin timestamps. No import user
+namespaces are merged. Future/tied outcomes cannot affect another event's features or its
+negative universe. V1 samples alternatives to this target, including earlier-positive pins;
+they are unobserved for this target event, and can be false negatives. Excluding only prior
+known positives is a separate sampler experiment. A sampled negative may later be purchased.
+Unseen served items are not observed negative impressions. Sigmoid scores are
+**engagement scores, not measured CTR**.
 
-Always specify which policy produced an example. Keep the model fixed during evaluation;
-earlier evaluation interactions may update history under the recorded policy. Coarse ties
-must not be ordered to allow one tied outcome to influence another. Imported namespace
-merging and shifted dates require the Phase 1 manifest policy; do not silently mix imports.
+## Run, inspect and activate
 
-## Run and inspect
+From the repository root, with the normal local stack ready:
+
+```bash
+uv sync --locked --group ml
+make personalization-backfill
+uv run --locked --group ml python -m scripts.train_personalization \
+  --synthetic-validation --output data/ml/my-validation-run
+```
+
+Choose a new output directory for every run. Outputs are `ranker.json`, `feed-config.json`,
+`training-manifest.json`, `sampling-audit.json` and `evaluation.json`. The sampling audit
+records each target's seed, eligible-universe hash/count and shortfall. Model artifacts
+include ordered features, scaling, coefficients, C-selection results and the MLflow run ID.
+MLflow stores full manifests, the artifact, final metrics and audit in `mlruns/phase3a.db`.
+Training code and the full dependency lock are versioned; local weights, runs and artifacts
+are ignored data. Scikit-learn 1.7.2 and MLflow Skinny 3.5.1 are pinned, with SQLAlchemy 2.0
+for compatibility. Torch belongs to the isolated CLIP service, not the API/host environment.
+
+Activate the newly generated config explicitly:
+
+```bash
+FEED_CONFIG="$(cat data/ml/my-validation-run/feed-config.json)" \
+  docker compose up -d --no-deps --wait api
+docker compose restart web
+```
+
+The artifact path must be relative under `data/ml` for Docker's read-only `/app/data/ml`
+mount. The generated command above has that form when the output is a relative path.
+An artifact checksum, embedding/feature version, dimension or history-policy mismatch
+rejects activation. Missing/malformed artifacts do not silently become a different model.
+Default Discover for signed-in users uses this feed, so opening/saving pins and refreshing
+lets you inspect personalized results. An unregistered vector recipe also rejects serving.
+To restore the committed baseline config (or reproduce the baseline browser suite):
+
+```bash
+FEED_CONFIG='{}' docker compose up -d --no-deps --wait api
+docker compose restart web
+```
+
+Each restart uses an explicit configuration. A later plain `make up` uses the default
+baseline unless `FEED_CONFIG` is supplied again. The old requests retain their actual model
+and feature snapshots after rollback. Training never performs these activation commands.
+
+For an actual imported dataset, supply a `TrainingManifest` JSON with its exact import IDs,
+source chronology/cutoffs, explicit availability/content policy and extraction time:
+
+```bash
+uv run --locked --group ml python -m scripts.train_personalization \
+  --manifest data/manifests/hm-training.json --output data/ml/hm-run-001
+```
+
+The normal importer and vector backfill must have completed first. Historical replay needs
+`availability_policy: historical_import_replay`, `content_policy: fixed_import_content`,
+`source_weights: {imported_purchase_proxy: 1}`, and `label_known_through` at extraction time.
+For resolved app/simulator saves instead, the same command accepts `recorded_receipt`,
+`recorded_content`, no import IDs, and the explicitly declared observed/simulator source
+weights. It uses the visible vector-backed catalog without rewriting known times.
+An empty/single-class training split or an empty eligible test task raises instead of
+producing a claimed successful model. Validation selects C from 0.1/1/10; with no validation
+rows the smallest declared C is explicitly used, and final test never participates in fit.
+
+Checks:
 
 ```bash
 make check
 make integration
-make phase3-preflight
-make phase3-exercises
+uv run --locked --group ml python -m scripts.evaluate_personalized_retrieval
+uv run --locked --group ml python -m scripts.phase3_preflight --database --encoder
+RUN_PERSONALIZED_UI=1 npm --prefix frontend run test:e2e -- phase3-personalized.spec.ts
 ```
 
-The core targets are skipped by ordinary checks and intentionally fail at TODOs when opted
-in. Start with `RUN_PHASE3_EXERCISES=1 uv run --locked pytest -k normalization`. The current
-16 known-answer cases cover normalization, history cutoffs, exact retrieval, split ties,
-future-positive negative sampling, empty training, scoring, reranking and metrics. Real
-CLIP batches, ANN recall/latency, full model fitting, serving swaps and final evaluation need
-additional acceptance checks when those implementations exist.
+Preflight is an inventory, not acceptance. Optional `--artifact PATH --sha256 HASH
+--evaluation PATH` checks that a report matches a loaded artifact. Runtime tests and
+real-data quality are separate evidence.
 
-To inspect actual configured database counts without writing anything:
+The targeted browser command requires the explicit personalized config. Run the ordinary
+full browser suite with the baseline config, then clean its recorded accounts using
+`uv run --locked --group ml python -m scripts.cleanup_browser_tests` before another suite.
 
-```bash
-uv run --locked python -m scripts.phase3_preflight --database
-uv run --locked python -m scripts.phase3_preflight --database --fail-on-pending
-```
+## Measured result and limits
 
-The last command returns exit 2 for known missing prerequisites. Static inventory is not
-runtime verification: removing a pending raise does not prove correctness. Artifact and
-evaluation acceptance are explicitly listed as unchecked. No training, downloads, simulator
-traffic, model activation or fake scores are performed by preflight.
+[phase3a-checks.json](reports/phase3a-checks.json) records 163 passing unit checks, 60 unique
+integration checks (59 in the full regression plus the added import acceptance), 10 baseline
+browser checks and 2 personalized desktop/mobile checks. Ruff, TypeScript/Vite, schema drift,
+repeat-backfill idempotence and exact cleanup also passed. The 15 skipped backend cases are
+the independent Phase 3B CTR exercises.
 
-## Completion and explain-back
+[phase3a-evaluation.json](reports/phase3a-evaluation.json) records 97 authored fixture saves,
+485 examples and 25 final-test queries on the 32 real fused demo vectors. The 12-day trace
+uses a fixture chronology after vector availability and is never inserted into app history.
+It validates the mechanics without building a simulator preference model.
 
-Before declaring Phase 3A complete, finish Phase 2 acceptance, provide actual declared
-history, pin the ML runtime/checkpoints, generate vectors, prove cold-start and personalized
-serving, record reproducible offline baseline comparisons, and demonstrate a configuration
-swap/rollback with attributable requests. Current scaffold checks do not satisfy these gates.
+| Method | Recall@10 | NDCG@10 | Coverage |
+|---|---:|---:|---:|
+| Recency | 0.24 | 0.150 | 0.3125 |
+| Popularity | 0.64 | 0.297 | 0.34375 |
+| Logistic ranker | 0.60 | 0.319 | 0.3125 |
+| Similarity | 0.96 | 0.377 | 1.0 |
+| Logistic plus diversity | 0.44 | 0.269 | 0.25 |
+| Serving policy, including cold fallback | 0.44 | 0.269 | 0.40625 |
 
-Explain-back outcomes remain pending:
+The ranker improves ordering by NDCG but misses more top-10 targets than popularity.
+Diversity removes similar pins and loses recall on this authored repetitive trace. All
+rankers see the same eligible catalog; the model is fixed while earlier test actions can
+update history. This establishes neither a real-user benefit nor measured CTR.
+[phase3a-retrieval.json](reports/phase3a-retrieval.json) records 16 pin/mean queries, top-10
+exact/HNSW agreement 1.0 and median exact/ANN time about 4.83/17.46 ms. The actual query plan
+uses `ix_personalized_clip_hnsw` with scans/sorts forced off; this tiny corpus shows no ANN
+speed advantage. Full-catalog ranking evaluation does not measure large-catalog shortlist
+loss. The fitted input/model version repeated across independent runs.
 
-1. Why can a late event's old timestamp leak information into historical features? How does
-   the imported replay policy differ from a live delayed-event policy?
-2. What do exact retrieval, ANN recall and cold-start fallback each verify?
-3. Why isn't the implicit ranker's sigmoid output CTR, and which transforms must be fitted
-   only on training data?
+V1 deliberately loads eligible catalog/history into memory. Features and baseline lists
+are clear study implementations, not a production-scale feature store. Larger datasets need
+indexed history windows, batched/cached feature aggregation, measured shortlist recall and
+bounded training batches. Real H&M/user-history quality acceptance remains open.
 
-Revisit: single versus multiple user embeddings, full catalog versus ANN shortlists,
-logistic regression versus LightGBM, duplicate/creator caps versus MMR, and measured model
-rollout/rollback under later simulator workloads. The simulator remains a separate project.
+Revisit: image-only versus fused content, multiple user interests, candidate quotas,
+logistic versus LightGBM, duplicate/creator limits versus MMR, and measured rollout under
+the separate simulator's later operations exercises. Explain-back questions and the
+statement walkthrough are in PHASE3A_WALKTHROUGH.md; discussion is not assumed complete.
 
-## Primary implementation references
+The checked local app uses `data/ml/phase3a-validation-v3/feed-config.json` and model
+`ranker:logreg:651ebd20368e5b6f`. This is an explicitly synthetic-validation model. The
+baseline configuration remains the source default; use the documented rollback command.
 
-- [OpenCLIP usage and pinned pretrained model selection](https://github.com/mlfoundations/open_clip#usage).
-- [ViT-B-32 model definition](https://github.com/mlfoundations/open_clip/blob/main/src/open_clip/model_configs/ViT-B-32.json).
-- [pgvector Python SQLAlchemy integration](https://github.com/pgvector/pgvector-python#sqlalchemy).
-- [pgvector mixed dimensions and per-model expression/partial indexes](https://github.com/pgvector/pgvector#can-i-store-vectors-with-different-dimensions-in-the-same-column).
-- [scikit-learn logistic regression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html).
+Primary references: [CLIP implementation](https://github.com/openai/CLIP),
+[StandardScaler](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html),
+[LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html),
+[MLflow tracking](https://mlflow.org/docs/latest/ml/tracking/tracking-api).

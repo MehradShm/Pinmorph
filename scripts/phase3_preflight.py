@@ -13,6 +13,9 @@ import app
 from app.config import Settings
 from app.database import make_engine
 from app.logging.models import Engagement, FeedRequest, Impression
+from app.ml.artifacts import load_artifact
+from app.ml.config import EmbeddingConfig
+from app.ml.embeddings import ClipPinEmbedder
 from app.ml.models import EmbeddingModel, PinEmbedding
 from app.models import ImportedInteraction, Pin
 
@@ -54,7 +57,7 @@ def runtime_inventory() -> dict[str, str | None]:
     packages = {}
     for package in ("pgvector", "numpy", "torch", "open_clip_torch", "scikit-learn", "mlflow"):
         try:
-            packages[package] = version(package)
+            packages[package] = version("mlflow-skinny" if package == "mlflow" else package)
         except PackageNotFoundError:
             packages[package] = None
     return packages
@@ -78,6 +81,13 @@ def database_inventory(db: Session) -> dict[str, int]:
     counts["demo_pins"] = db.scalar(
         select(func.count()).select_from(Pin).where(Pin.provenance == "synthetic_demo")
     )
+    counts["personalized_vectors"] = db.scalar(
+        select(func.count())
+        .select_from(PinEmbedding)
+        .where(
+            PinEmbedding.embedder_version == EmbeddingConfig().version,
+        )
+    )
     return counts
 
 
@@ -89,6 +99,10 @@ def main() -> int:
     parser.add_argument(
         "--fail-on-pending", action="store_true", help="Exit 2 for known missing prerequisites"
     )
+    parser.add_argument("--encoder", action="store_true", help="Validate the isolated CPU recipe")
+    parser.add_argument("--artifact", type=Path)
+    parser.add_argument("--sha256")
+    parser.add_argument("--evaluation", type=Path)
     arguments = parser.parse_args()
     # Phase 3B is a later independent track and must not block Phase 3A acceptance.
     exercises = [
@@ -98,14 +112,35 @@ def main() -> int:
     ]
     runtimes = runtime_inventory()
     blockers = ["core_exercises_pending"] if exercises else []
-    missing = [
-        name
-        for name in ("torch", "open_clip_torch", "scikit-learn", "mlflow")
-        if not runtimes[name]
-    ]
+    missing = [name for name in ("scikit-learn", "mlflow") if not runtimes[name]]
     if missing:
         blockers.append("ml_runtime_not_installed")
     counts = None
+    artifact = None
+    evaluation = None
+    encoder = None
+    unchecked = ["runtime_acceptance_tests"]
+    if arguments.artifact:
+        if not arguments.sha256:
+            parser.error("--artifact requires --sha256")
+        artifact = load_artifact(arguments.artifact, arguments.sha256)
+    else:
+        unchecked.append("trained_artifact")
+    if arguments.evaluation:
+        evaluation = json.loads(arguments.evaluation.read_text())
+        if (
+            not artifact
+            or evaluation.get("model_version") != artifact.version
+            or evaluation.get("artifact_sha256") != arguments.sha256
+            or evaluation.get("query_count", 0) <= 0
+        ):
+            raise ValueError("Evaluation does not match the selected artifact")
+    else:
+        unchecked.append("evaluation_report")
+    if arguments.encoder:
+        encoder = ClipPinEmbedder(EmbeddingConfig(), Settings().lens_endpoint).metadata()
+    else:
+        unchecked.append("isolated_encoder_runtime")
     if arguments.database:
         engine = make_engine(Settings())
         try:
@@ -113,9 +148,9 @@ def main() -> int:
                 counts = database_inventory(db)
         finally:
             engine.dispose()
-        if not counts["imported_interactions"] and not counts["engagements"]:
+        if not counts["imported_interactions"] and not counts["engagements"] and not artifact:
             blockers.append("no_training_interactions")
-        if not counts["pin_embeddings"]:
+        if not counts["personalized_vectors"]:
             blockers.append("no_persisted_embeddings")
     else:
         blockers.append("database_not_checked")
@@ -125,11 +160,14 @@ def main() -> int:
                 "phase": "3A",
                 "status": "prerequisites_pending" if blockers else "inventory_clear",
                 "check_type": "static_inventory_not_acceptance",
-                "unchecked": ["trained_artifact", "evaluation_report", "runtime_acceptance"],
+                "unchecked": unchecked,
                 "pending_exercises": exercises,
                 "runtime": runtimes,
                 "missing_ml_runtime": missing,
                 "database": counts,
+                "encoder": encoder,
+                "artifact_version": artifact.version if artifact else None,
+                "evaluation_provenance": evaluation.get("data_provenance") if evaluation else None,
                 "blockers": blockers,
             },
             indent=2,

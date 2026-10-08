@@ -1,8 +1,10 @@
+import math
+
 from app.feed.contracts import Candidate, FeedContext, RankedCandidate
-from app.learning import LearningExercisePending
 from app.ml.artifacts import RankerArtifact
 from app.ml.config import RerankingConfig
 from app.ml.contracts import Embedding
+from app.ml.embeddings import normalize_vector
 
 
 class LogisticRegressionRanker:
@@ -17,8 +19,26 @@ class LogisticRegressionRanker:
         report the actual artifact version. Scores trained on sampled implicit negatives
         are engagement scores, not measured CTR. Never fit/standardize on serving data.
         """
-        # TODO(phase3a-ranking): ordered features, pinned scaling, stable logistic scoring and sort.
-        raise LearningExercisePending("phase3a-ranking", phase="3A")
+        ranked = []
+        for candidate in candidates:
+            values = [candidate.features[name] for name in self.artifact.feature_names]
+            if not all(math.isfinite(value) for value in values):
+                raise ValueError("Scoring features must be finite")
+            logit = self.artifact.intercept + sum(
+                coefficient * ((value - mean) / scale)
+                for value, coefficient, mean, scale in zip(
+                    values,
+                    self.artifact.coefficients,
+                    self.artifact.means,
+                    self.artifact.scales,
+                    strict=True,
+                )
+            )
+            if not math.isfinite(logit):
+                raise ValueError("Scoring logit must be finite")
+            score = sigmoid(logit)
+            ranked.append(RankedCandidate(candidate, score, score))
+        return sorted(ranked, key=lambda r: (-r.rank_score, r.candidate.pin.id))
 
 
 class DiversityReranker:
@@ -37,5 +57,37 @@ class DiversityReranker:
         bucket (the imported catalog has no creators). Missing embeddings keep an item
         eligible for the creator cap. Preserve scores; serving later assigns positions.
         """
-        # TODO(phase3a-reranking): ranked-order duplicate suppression and per-creator limits.
-        raise LearningExercisePending("phase3a-reranking", phase="3A")
+        retained, seen, creators, vectors = [], set(), {}, []
+        for row in candidates:
+            pin = row.candidate.pin
+            if pin.id in seen:
+                continue
+            seen.add(pin.id)
+            if (
+                pin.owner_id is not None
+                and creators.get(pin.owner_id, 0) >= self.config.per_creator_cap
+            ):
+                continue
+            vector = self.embeddings.get(pin.id)
+            values = normalize_vector(vector.values) if vector else None
+            if vector and any(
+                version == vector.embedder_version
+                and len(old) == len(values)
+                and sum(a * b for a, b in zip(values, old, strict=True))
+                >= self.config.duplicate_similarity
+                for version, old in vectors
+            ):
+                continue
+            retained.append(row)
+            if vector:
+                vectors.append((vector.embedder_version, values))
+            if pin.owner_id is not None:
+                creators[pin.owner_id] = creators.get(pin.owner_id, 0) + 1
+        return retained
+
+
+def sigmoid(value: float) -> float:
+    if value >= 0:
+        return 1 / (1 + math.exp(-value))
+    exp = math.exp(value)
+    return exp / (1 + exp)

@@ -1,10 +1,12 @@
+import math
+from dataclasses import replace
+
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import cast, exists, literal, select, text
 from sqlalchemy.orm import Session, aliased
 
 from app.feed.contracts import Candidate, FeedContext
-from app.learning import LearningExercisePending
-from app.ml.config import RetrievalConfig
+from app.ml.config import PersonalizationConfig, RetrievalConfig
 from app.ml.contracts import Embedding, RetrievalHit, VectorItem
 from app.ml.embeddings import normalize_vector
 from app.ml.models import PinEmbedding
@@ -112,9 +114,12 @@ class PgvectorANNRetriever:
 
 
 class BlendedCandidateSource:
-    def __init__(self, config: RetrievalConfig):
+    def __init__(
+        self, config: RetrievalConfig, personalization: PersonalizationConfig | None = None
+    ):
         self.config = config
         self.version = config.version
+        self.personalization = personalization or PersonalizationConfig(retrieval=config)
 
     def retrieve(self, db: Session, context: FeedContext) -> list[Candidate]:
         """Build user context, blend ANN/popular/recent quotas, deduplicate and backfill.
@@ -123,5 +128,95 @@ class BlendedCandidateSource:
         No-history users use the configured popularity/recency fallback. Requires the
         Phase 2 feature/history path; final display position is never a scoring feature.
         """
-        # TODO(phase3a-candidate-blend): compose history, retrievers and Phase 2 baseline sources.
-        raise LearningExercisePending("phase3a-candidate-blend", phase="3A")
+        from app.ml.baselines import CatalogCandidateSource, PopularityRanker, RecencyRanker
+        from app.ml.data import online_inputs
+
+        inputs = online_inputs(db, context, self.personalization)
+        query = inputs.features.user_embedding(context.user_id, context.as_of)
+        base = CatalogCandidateSource().retrieve(db, context)
+        candidates = []
+        vector_ids = {item.pin_id for item in inputs.catalog}
+        for candidate in base:
+            if candidate.pin.id in vector_ids:
+                features = inputs.features.build(context.user_id, candidate.pin.id, context.as_of)
+            else:
+                features = dict(candidate.features, similarity=0.0, user_history_count=0.0)
+            candidates.append(replace(candidate, features=features))
+        popular = [
+            replace(r.candidate, sources=(PopularityRanker.version,))
+            for r in PopularityRanker().rank(candidates, context)
+        ]
+        recent = [
+            replace(r.candidate, sources=(RecencyRanker.version,))
+            for r in RecencyRanker().rank(candidates, context)
+        ]
+        if query is None:
+            fallback = (
+                popular if self.config.fallback_ranker == PopularityRanker.version else recent
+            )
+            return [
+                replace(c, sources=(self.version, "fallback:cold-start:v1", *c.sources))
+                for c in fallback[: self.config.pool_size]
+            ]
+        by_id = {c.pin.id: c for c in candidates}
+        hits = PgvectorANNRetriever().search(db, query, context, self.config.pool_size)
+        ann = [
+            replace(
+                by_id[h.pin_id],
+                sources=(PgvectorANNRetriever.version,),
+                retrieval_score=h.similarity,
+            )
+            for h in hits
+            if h.pin_id in by_id
+        ]
+        return [
+            replace(c, sources=(self.version, *c.sources))
+            for c in blend_candidates(
+                ann,
+                popular,
+                recent,
+                self.config,
+            )
+        ]
+
+
+def blend_candidates(ann, popular, recent, config):
+    lists = (ann, popular, recent)
+    shares = (config.ann_share, config.popularity_share, config.recency_share)
+    exact = [config.pool_size * share for share in shares]
+    quotas = [math.floor(value) for value in exact]
+    for index in sorted(range(3), key=lambda i: (-(exact[i] - quotas[i]), i))[
+        : config.pool_size - sum(quotas)
+    ]:
+        quotas[index] += 1
+    selected = {}
+
+    def add(candidate):
+        old = selected.get(candidate.pin.id)
+        if old:
+            selected[candidate.pin.id] = replace(
+                old,
+                sources=tuple(
+                    dict.fromkeys(
+                        (*old.sources, *candidate.sources),
+                    )
+                ),
+            )
+            return False
+        if len(selected) < config.pool_size:
+            selected[candidate.pin.id] = candidate
+            return True
+        return False
+
+    for rows, quota in zip(lists, quotas, strict=True):
+        count = 0
+        for candidate in rows:
+            if count >= quota:
+                break
+            count += add(candidate)
+    for rows in lists:
+        for candidate in rows:
+            if len(selected) >= config.pool_size:
+                break
+            add(candidate)
+    return list(selected.values())

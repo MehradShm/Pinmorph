@@ -308,3 +308,37 @@ refresh or the CLI repairs older periods. The baseline favors auditable correctn
 incremental complexity; local SQL scheduling stays outside the image queue. Revisit streaming
 rollups, partitioning, durable jobs and retention. These counts are not CTR, conversions or
 an immutable financial ledger. Explain-back discussion remains open.
+
+
+## 2026-10-08 · Complete the original personalized-recommendation finish line
+
+- **Decision:** finish Phase 3A on `phase-3a-completion` after the user selected it as the next work. Preserve Phase 5 and the earlier ML scaffold tags. Implement the requested learning core and provide a statement walkthrough with explain-back prompts; discussion remains open.
+- **Why:** the roadmap ends at Phase 5; the remaining personalized ML scaffold was the original first finish line. No invented Phase 6 or implicit expansion into simulator/CTR work.
+- **Revisit:** real H&M/user-history acceptance and the explicitly separate Phase 3B tracks.
+
+## 2026-10-08 · Give fused content a distinct pinned local CLIP space
+
+- **Decision:** reuse the verified OpenAI ViT-B/32 CPU service, with a new `embedder:clip-image-title:v1` recipe, 50/50 normalized image/title fusion, 77-token EOT-preserving title policy, immutable title/pixel hash and its own 512-dimensional HNSW index. Keep Lens image-only vectors independent. Generate both recipes during media jobs and backfill existing pins explicitly.
+- **Why:** there is an already checked local checkpoint/runtime. Reusing it avoids a second large runtime while still executing real image and text inference. This replaces the scaffold's proposed LAION/OpenCLIP recipe explicitly rather than treating incompatible spaces as interchangeable.
+- **Alternatives:** retain the LAION checkpoint in another service; use image-only content; learn fusion. A new recipe must record new weight/text/preprocessing/dimension metadata and index/query together.
+- **Revisit:** compare image-only/fusion on real held-out interactions before changing the default.
+
+## 2026-10-08 · Share point-in-time features and preserve reconciliation availability
+
+- **Decision:** use the same five-feature builder offline and online, occurrence AND known time strictly before cutoff, timestamp-group soft history caps and relative exponential decay. Pending actions stay unavailable; resolved saves use the latest action/canonical-view/referenced-alias receipt, while raw action receipt is preserved. Baseline counts honor that same resolution gate. Exact import IDs, extraction time and a separate fixed-import-content policy govern historical replay.
+- **Why:** neither an old source/client timestamp nor an earlier pending receipt makes late resolution available in the past. Shared implementations and served original values let training-serving parity be checked directly.
+- **Alternatives:** persist a dedicated resolved-at field and an indexed feature store; multiple interest vectors. V1 aggregation remains a small-catalog implementation.
+- **Revisit:** batching/indexed history, larger datasets, multiple interests and operational late-event exercises.
+
+## 2026-10-08 · Fit inspectable implicit models without automatic activation
+
+- **Decision:** deterministic per-event negative sampling over the eligible catalog, train-only StandardScaler, weighted logistic regression with validation-only C selection, ordered JSON coefficients/scaling, immutable output directories, and MLflow manifests/model/audit/metrics. Pin sklearn 1.7.2, MLflow Skinny 3.5.1 and SQLAlchemy below 2.1; the locked 2.0 release fixes MLflow's removed private pool import. Artifact checksum, embedding/feature/history policy and actual ranker version are validated during explicit feed configuration changes.
+- **Why:** final test stays independent, future positives cannot silently change negatives, sigmoid output is not measured CTR, and fitting must not change active serving. Cold requests record the actual baseline ranker and a reason; warm requests record the fitted version/hash.
+- **Alternatives:** LightGBM, multiple/learned user encoders, a model registry, or an impression-label CTR objective. Known-answer core checks now run by default.
+- **Revisit:** real-data selection, scale, observed-impression calibration and simulator rollout/rollback workloads.
+
+## 2026-10-08 · Record synthetic validation without claiming real-user quality
+
+- **Decision:** fit on an authored 97-save mechanics trace against the 32 real demo vectors, without inserting invented app events. Preserve the exact synthetic ranker, sample audit and same-candidate report in docs/reports. Compare raw scoring, similarity, baseline and diversity/cold-fallback policy separately; force the actual HNSW plan for a tiny-corpus agreement check.
+- **Why:** there are no supplied H&M histories yet. Measured synthetic recall@10 is 0.60 versus popularity 0.64; NDCG improves 0.297 to 0.319, while diversity reduces recall to 0.44. Exact/HNSW top-10 overlap is 1.0 and exact is faster. These are mechanics/tradeoff results, not a preference simulator or real-user quality claim.
+- **Revisit:** repeat on declared real imports, larger eligible shortlists, MMR/duplicate thresholds and held-out user cohorts. Explain-back remains open.

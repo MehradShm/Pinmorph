@@ -1,6 +1,6 @@
 # Revisiting an earlier phase
 
-The repository has `main`, `phase-2`, `phase-3a`, `phase-3b`, and the active `phase-4` work branch.
+The active branch is `phase-3a-completion`; earlier work branches remain available.
 Annotated tags preserve `phase-1`, `phase-2-scaffold`, `phase-3a-scaffold`, and
 `phase-3b-scaffold`. The scaffold
 tags are explicitly unfinished learning checkpoints, not completed milestones.
@@ -110,3 +110,23 @@ This is a recipe, not an already created worktree. Use an isolated Compose proje
 image tags, database, bucket and model mount as described above; old code must not run
 against the current migrated database. Phase 5 details are in PHASE5.md. These code
 checkpoints do not mark the separate Phase 3A/3B learning exercises complete.
+
+## Phase 3A personalization implementation checkpoint
+
+Branch `phase-3a-completion` completes the previously preserved Phase 3A skeleton. The
+`phase-3a-personalization` tag preserves the validated implementation, migration
+`72aa31f096bc`, encoder/runtime locks and synthetic ranking/retrieval reports. Earlier
+`phase-5` and `phase-3a-scaffold` tags remain unchanged. To inspect the scaffold beside it:
+
+```bash
+git worktree add --detach ../pinterest-lite-phase-3a-scaffold refs/tags/phase-3a-scaffold
+```
+
+This is a recipe, not an already created worktree. Use separate stores/ports/images for
+historical execution: the current readiness check expects the new schema. Git preserves
+the tiny validated JSON ranker/report/audit in `docs/reports`; local active configs, CLIP
+weights and MLflow runs remain external ignored state. Re-run training to create a new
+artifact/config with its own hash, or copy the documented saved validation artifact into
+your isolated runtime. PHASE3A.md documents configuration activation and baseline rollback.
+This checkpoint establishes mechanics on synthetic history, not real-data quality or
+completed explain-back discussion. Phase 3B remains unfinished.

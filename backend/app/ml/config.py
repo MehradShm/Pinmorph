@@ -14,13 +14,14 @@ FEATURE_NAMES = (
 
 
 class EmbeddingConfig(Record):
-    version: str = "embedder:clip:vit-b32:laion2b:v1"
-    architecture: str = "ViT-B-32"
-    checkpoint: str = "laion2b_s34b_b79k"
+    version: str = "embedder:clip-image-title:v1"
+    architecture: str = "ViT-B/32"
+    checkpoint: str = "openai:ViT-B-32"
+    weights_sha256: str = "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af"
     dimension: int = Field(default=512, ge=1, le=2000)
     image_weight: FiniteFloat = Field(default=0.5, ge=0, le=1)
-    preprocess_version: str = "openclip:eval:v1"
-    text_policy: str = "pin_title:v1"
+    preprocess_version: str = "openai-clip:eval224:v1"
+    text_policy: str = "pin_title:truncate-eot77:v1"
 
 
 class UserEmbeddingConfig(Record):
@@ -41,6 +42,8 @@ class RetrievalConfig(Record):
     def validate_shares(self):
         if abs(self.ann_share + self.popularity_share + self.recency_share - 1) > 1e-9:
             raise ValueError("Candidate shares must sum to one")
+        if self.fallback_ranker not in {"ranker:popularity:v1", "ranker:recency:v1"}:
+            raise ValueError("Cold-start fallback must be a declared baseline ranker")
         return self
 
 
@@ -100,7 +103,10 @@ class TrainingManifest(Record):
         "fixed_model_update_history_from_earlier_events"
     )
     embedding_version: str = Field(min_length=1)
+    user_embedding: UserEmbeddingConfig = Field(default_factory=UserEmbeddingConfig)
     feature_schema_version: str = "features:personalized:v1"
+    content_policy: Literal["recorded_content", "fixed_import_content"] = "recorded_content"
+    label_known_through: AwareDatetime | None = None
 
     @model_validator(mode="after")
     def validate_sources(self):
@@ -114,4 +120,8 @@ class TrainingManifest(Record):
             raise ValueError("Import run IDs must be unique")
         if "imported_purchase_proxy" in self.source_weights and not self.import_run_ids:
             raise ValueError("Imported proxies require their exact import run IDs")
+        if self.content_policy == "fixed_import_content" and (
+            self.availability_policy != "historical_import_replay"
+        ):
+            raise ValueError("Fixed import content is only valid for historical import replay")
         return self

@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.feed.contracts import FeedContext
-from app.ml.contracts import Embedding, VectorItem
+from app.ml.config import EmbeddingConfig
+from app.ml.contracts import Embedding, PinContent, VectorItem
+from app.ml.embeddings import ClipPinEmbedder
 from app.ml.models import EmbeddingModel, PinEmbedding
 from app.models import Pin, User, utcnow
 from app.product.models import HiddenPin
@@ -92,6 +94,61 @@ def store_image_embedding(db: Session, pin: Pin, data: bytes, settings: Settings
         )
     )
     db.flush()
+
+
+def store_content_embedding(db: Session, pin: Pin, data: bytes, settings: Settings):
+    config = EmbeddingConfig()
+    # Length prefix makes the exact title/pixel boundary unambiguous.
+    title = pin.title.encode("utf-8")
+    digest = hashlib.sha256(len(title).to_bytes(8, "big") + title + data).hexdigest()
+    db.execute(text("SELECT pg_advisory_xact_lock(442043)"))
+    identity = (pin.id, config.version, digest)
+    if db.get(PinEmbedding, identity):
+        return False
+    encoder = ClipPinEmbedder(config, settings.lens_endpoint)
+    metadata = encoder.metadata()
+    model = db.get(EmbeddingModel, config.version)
+    fields = {
+        name: metadata[name]
+        for name in (
+            "dimension",
+            "architecture",
+            "checkpoint",
+            "weights_sha256",
+            "preprocess_version",
+            "text_policy",
+            "image_weight",
+            "library_versions",
+        )
+    }
+    if model:
+        if any(getattr(model, name) != value for name, value in fields.items()):
+            raise ValueError("Immutable content embedding recipe changed")
+    else:
+        db.add(EmbeddingModel(version=config.version, **fields))
+        db.flush()
+    vector = encoder.embed(
+        [
+            PinContent(
+                pin_id=pin.id,
+                title=pin.title,
+                image_bytes=data,
+                content_hash=digest,
+            )
+        ]
+    )[0]
+    db.add(
+        PinEmbedding(
+            pin_id=pin.id,
+            embedder_version=config.version,
+            content_hash=digest,
+            dimension=vector.dimension,
+            embedding=list(vector.values),
+            known_at=utcnow(),
+        )
+    )
+    db.flush()
+    return True
 
 
 def catalog_vectors(db: Session, version: str, context: FeedContext) -> list[VectorItem]:

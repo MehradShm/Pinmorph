@@ -1,5 +1,10 @@
 # Phase 3B: separate CTR study and operations preparation
 
+> The status details below describe the preserved Phase 3B scaffold checkpoint. Phase 4/5
+> and Phase 3A implementation have since completed; see PHASE3A.md for the current shared
+> ML runtime and serving behavior. The separate CTR algorithms and simulator adapter/reset
+> described here remain unfinished.
+
 Status: **started; local data/manifest/artifact tooling, diagnostics and disposable setup
 work. CTR algorithms and the minimum simulator adapter/reset remain pending.** Phase 4
 has not started. Phase 3A is preserved as `phase-3a-scaffold`, an unfinished code checkpoint.

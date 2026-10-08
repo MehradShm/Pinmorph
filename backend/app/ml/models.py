@@ -71,3 +71,14 @@ Index(
         PinEmbedding.dimension == 512,
     ),
 )
+
+Index(
+    "ix_personalized_clip_hnsw",
+    cast(PinEmbedding.embedding, VECTOR(512)).label("embedding"),
+    postgresql_using="hnsw",
+    postgresql_ops={"embedding": "vector_cosine_ops"},
+    postgresql_where=and_(
+        PinEmbedding.embedder_version == "embedder:clip-image-title:v1",
+        PinEmbedding.dimension == 512,
+    ),
+)

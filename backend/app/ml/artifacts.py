@@ -22,6 +22,7 @@ class RankerArtifact(Record):
     scales: tuple[FiniteFloat, ...]
     training: TrainingManifest
     library_versions: dict[str, str]
+    fit_details: dict = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_feature_contract(self):

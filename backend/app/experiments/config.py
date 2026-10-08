@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
 
+from app.ml.config import PersonalizationConfig
+
 
 class Arm(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -35,3 +37,19 @@ class FeedConfig(BaseModel):
     feature_schema_version: str = "features:baseline:v1"
     interest_boost: FiniteFloat = Field(default=24, ge=0, le=1000)
     experiment: Experiment = Field(default_factory=Experiment)
+    personalization: PersonalizationConfig | None = None
+    ranker_artifact_path: str | None = None
+    ranker_artifact_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def validate_personalization(self):
+        if self.personalization:
+            if not self.ranker_artifact_path or not self.ranker_artifact_sha256:
+                raise ValueError("Personalization requires an explicit checksummed artifact")
+            if self.feature_schema_version != self.personalization.feature_schema_version:
+                raise ValueError("Personalized feed feature schema does not match")
+            if self.candidate_source != self.personalization.retrieval.version:
+                raise ValueError("Personalized feed requires its configured candidate source")
+        elif self.ranker_artifact_path or self.ranker_artifact_sha256:
+            raise ValueError("Ranker artifact requires personalization configuration")
+        return self

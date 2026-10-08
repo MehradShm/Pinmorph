@@ -17,12 +17,13 @@ dependencies = [
     "python-multipart>=0.0.20,<1",
     "redis>=5.2,<7",
     "rq>=2.2,<3",
-    "sqlalchemy>=2.0,<3",
+    "sqlalchemy>=2.0,<2.1",
     "uvicorn[standard]>=0.34,<1",
 ]
 
 [dependency-groups]
 dev = ["pytest>=8.3,<10", "ruff>=0.11,<1"]
+ml = ["scikit-learn==1.7.2", "mlflow-skinny==3.5.1"]
 
 [build-system]
 requires = ["hatchling>=1.27,<2"]

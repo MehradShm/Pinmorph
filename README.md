@@ -18,11 +18,14 @@ Phase 5 adds business accounts, product prices/availability/merchant links, Shop
 and keyword filters, clearly labeled empty ad slots and owner-only daily creator analytics.
 See [docs/PHASE5.md](docs/PHASE5.md) for module interactions, usage and rollup definitions.
 
-Historical `phase-2-scaffold`, `phase-3a-scaffold` and `phase-3b-scaffold` tags preserve the
-learning skeletons. The remaining Phase 3A training/personalized-ranker and separate Phase
-3B CTR algorithms still have their own exercises; a trained personalized home ranker is not
-claimed by this checkpoint. [Milestone instructions](docs/MILESTONES.md) explain how to run
-older code with isolated application state.
+Phase 3A is now implemented: image/title CLIP, decayed user history, blended retrieval,
+artifact-backed personalized scoring, diversity limits, chronological fitting and baseline
+evaluation. [docs/PHASE3A.md](docs/PHASE3A.md) explains activation/rollback and measured
+synthetic validation; [the walkthrough](docs/PHASE3A_WALKTHROUGH.md) explains the algorithms.
+Real H&M/user recommendation quality remains unmeasured. The separate Phase 3B CTR and
+simulator adapter remain unfinished. Historical `phase-2-scaffold`, `phase-3a-scaffold`
+and `phase-3b-scaffold` tags preserve the learning skeletons.
+[Milestone instructions](docs/MILESTONES.md) explain isolated historical state.
 
 ## Start the stack
 

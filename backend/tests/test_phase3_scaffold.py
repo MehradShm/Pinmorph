@@ -5,7 +5,6 @@ import pytest
 from pydantic import ValidationError
 
 from app.feed.contracts import FeedContext
-from app.learning import LearningExercisePending
 from app.ml.artifacts import RankerArtifact, load_artifact, save_artifact
 from app.ml.config import (
     FEATURE_NAMES,
@@ -155,10 +154,9 @@ def test_inventory_is_static_and_groups_shared_exercises(tmp_path):
     assert len(records[0]["locations"]) == 2
 
 
-def test_ml_skeletons_do_not_silently_download_or_return_fake_vectors():
-    with pytest.raises(LearningExercisePending) as error:
-        ClipPinEmbedder(EmbeddingConfig()).embed([])
-    assert error.value.phase == "3A"
+def test_empty_ml_inputs_do_not_download_weights_or_return_fake_vectors():
+    assert ClipPinEmbedder(EmbeddingConfig()).embed([]) == []
     now = datetime.now(UTC)
-    with pytest.raises(LearningExercisePending):
-        MeanUserEmbedder(UserEmbeddingConfig()).embed([], FeedContext("r", "u", now, now))
+    assert (
+        MeanUserEmbedder(UserEmbeddingConfig()).embed([], FeedContext("r", "u", now, now)) is None
+    )

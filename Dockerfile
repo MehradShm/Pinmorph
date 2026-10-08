@@ -19,7 +19,7 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-acc
 
 FROM base AS checks
 USER root
-RUN uv sync --locked
+RUN uv sync --locked --group ml
 COPY backend/tests ./backend/tests
 USER app
 CMD ["pytest", "-m", "not integration"]

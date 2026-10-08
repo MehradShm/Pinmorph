@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Annotated
 
 import torch
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from PIL import Image
 from torchvision.transforms import (
     CenterCrop,
@@ -22,6 +22,7 @@ from vendor.model import build_model
 from vendor.simple_tokenizer import SimpleTokenizer
 
 VERSION = "embedder:clip-image-crop:v1"
+CONTENT_VERSION = "embedder:clip-image-title:v1"
 SHA = "40d365715913c9da98579312b702a82c18be219cc2a73407c4526f58eba950af"
 lock = threading.Lock()
 torch.set_num_threads(2)
@@ -45,6 +46,7 @@ async def lifespan(app):
     archive = torch.jit.load(str(path), map_location="cpu")
     app.state.model = build_model(archive.state_dict()).float().eval()
     tokenizer = SimpleTokenizer()
+    app.state.tokenizer = tokenizer
     labels = [
         "a photo of explicit nudity",
         "a photo of graphic bloody violence",
@@ -84,6 +86,21 @@ def health():
         "text_policy": "image_only:v1",
         "image_weight": 1.0,
         "library_versions": {"torch": torch.__version__, "device": "cpu"},
+        "personalization": {
+            "version": CONTENT_VERSION,
+            "architecture": "ViT-B/32",
+            "checkpoint": "openai:ViT-B-32",
+            "weights_sha256": SHA,
+            "dimension": 512,
+            "image_weight": 0.5,
+            "preprocess_version": "openai-clip:eval224:v1",
+            "text_policy": "pin_title:truncate-eot77:v1",
+            "library_versions": {
+                "torch": torch.__version__,
+                "device": "cpu",
+                "implementation": "openai-clip:d05afc436d78f1c48dc0dbf8e5980a9d471f35f6",
+            },
+        },
     }
 
 
@@ -103,6 +120,24 @@ def encode(image: Annotated[UploadFile, File()]):
         vector = app.state.model.encode_image(pixels).float()
         vector /= vector.norm(dim=-1, keepdim=True)
     return {"embedder_version": VERSION, "values": vector[0].tolist()}
+
+
+@app.post("/encode-content")
+def encode_content(
+    image: Annotated[UploadFile, File()], title: Annotated[str, Form(max_length=200)]
+):
+    encoded = encode(image)
+    tokenizer = app.state.tokenizer
+    ids = [tokenizer.encoder["<|startoftext|>"]] + tokenizer.encode(title)[:75]
+    ids.append(tokenizer.encoder["<|endoftext|>"])
+    tokens = torch.zeros(1, 77, dtype=torch.long)
+    tokens[0, : len(ids)] = torch.tensor(ids)
+    with lock, torch.inference_mode():
+        text = app.state.model.encode_text(tokens).float()
+        text /= text.norm(dim=-1, keepdim=True)
+        vector = 0.5 * torch.tensor(encoded["values"]).unsqueeze(0) + 0.5 * text
+        vector /= vector.norm(dim=-1, keepdim=True)
+    return {"embedder_version": CONTENT_VERSION, "values": vector[0].tolist()}
 
 
 @app.post("/classify")

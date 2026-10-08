@@ -1,6 +1,5 @@
 """Opt-in known-answer ML targets; these do not imply a trained production model."""
 
-import os
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -16,12 +15,7 @@ from app.ml.retrieval import ExactVectorRetriever
 from app.ml.training import build_examples, fit_ranker, split_interactions
 from app.models import Pin
 
-pytestmark = [
-    pytest.mark.phase3_exercise,
-    pytest.mark.skipif(
-        os.getenv("RUN_PHASE3_EXERCISES") != "1", reason="Phase 3A core learning targets"
-    ),
-]
+pytestmark = pytest.mark.phase3_exercise
 NOW = datetime(2026, 2, 1, tzinfo=UTC)
 CONTEXT = FeedContext("request", "user", NOW, NOW)
 
@@ -96,6 +90,8 @@ def test_time_split_keeps_boundary_ties_out_of_training():
             occurred_at=time,
             known_at=time,
             provenance="imported_purchase_proxy",
+            import_run_id="fixture-import",
+            received_at=time,
         )
         for index, time in enumerate([NOW - timedelta(seconds=1), NOW, NOW])
     ]
@@ -115,6 +111,8 @@ def test_negative_sampling_does_not_consult_future_positives_or_future_catalog()
             occurred_at=time,
             known_at=time,
             provenance="imported_purchase_proxy",
+            import_run_id="fixture-import",
+            received_at=time,
         )
         for pin, time in [("a", early), ("b", later)]
     ]

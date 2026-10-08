@@ -1,8 +1,8 @@
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
 
 from app.feed.contracts import Candidate, FeedContext, RankedCandidate
-from app.logging.models import Engagement
+from app.logging.models import Engagement, EventReceipt, Impression
 from app.models import ImportedInteraction, Pin, User
 from app.social.policy import visible_owner
 
@@ -39,7 +39,25 @@ class CatalogCandidateSource:
                 ).all()
             )
 
-        saves = counts(Engagement, (Engagement.type == "save",))
+        saves = counts(
+            Engagement,
+            (
+                Engagement.type == "save",
+                Engagement.attribution_status != "pending",
+                ~exists(
+                    select(Impression.event_id).where(
+                        Impression.event_id == Engagement.impression_event_id,
+                        Impression.received_at >= context.as_of,
+                    )
+                ),
+                ~exists(
+                    select(EventReceipt.event_id).where(
+                        EventReceipt.event_id == Engagement.referenced_impression_event_id,
+                        EventReceipt.received_at >= context.as_of,
+                    )
+                ),
+            ),
+        )
         purchases = counts(ImportedInteraction)
         return [
             Candidate(

@@ -10,19 +10,19 @@ logs:
 	docker compose logs -f api worker
 
 check:
-	uv run --locked ruff check .
-	uv run --locked ruff format --check .
-	uv run --locked pytest -m "not integration"
+	uv run --locked --group ml ruff check .
+	uv run --locked --group ml ruff format --check .
+	uv run --locked --group ml pytest -m "not integration"
 
 integration:
-	RUN_INTEGRATION=1 uv run --locked pytest -m integration
+	RUN_INTEGRATION=1 uv run --locked --group ml pytest -m integration
 
 # Shared Phase 2 core acceptance; requires the local stack.
 phase2-exercises:
 	RUN_PHASE2_EXERCISES=1 RUN_INTEGRATION=1 uv run --locked pytest -m phase2_exercise
 
 phase3-exercises:
-	RUN_PHASE3_EXERCISES=1 uv run --locked pytest -m phase3_exercise
+	uv run --locked --group ml pytest -m phase3_exercise
 
 phase3b-exercises:
 	RUN_PHASE3B_EXERCISES=1 uv run --locked pytest -m phase3b_exercise
@@ -41,7 +41,7 @@ mind-fixture:
 
 # Read-only inventory; add --database to the Python command to inspect the running stack.
 phase3-preflight:
-	uv run --locked python -m scripts.phase3_preflight
+	uv run --locked --group ml python -m scripts.phase3_preflight
 
 seed-plan:
 	uv run --locked python -m scripts.seed --demo --dry-run --reference-time 2026-10-07T00:00:00Z
@@ -67,3 +67,11 @@ lens-evaluate:
 .PHONY: analytics-rollup
 analytics-rollup:
 	uv run --locked python -m scripts.rollup_analytics
+
+.PHONY: personalization-backfill personalization-validate
+personalization-backfill:
+	uv run --locked --group ml python -m scripts.backfill_personalization
+
+# Choose a fresh output directory for each immutable training run.
+personalization-validate:
+	uv run --locked --group ml python -m scripts.train_personalization --synthetic-validation --output data/ml/validation-$(shell date +%Y%m%d-%H%M%S)

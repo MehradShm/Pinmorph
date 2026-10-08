@@ -148,7 +148,7 @@ def process_pin(pin_id: str, request_id: str | None = None) -> str:
                     return "removed"
                 pin.width, pin.height, pin.dominant_color = width, height, color
                 from app.discovery.crop import CropBox, prepare_crop
-                from app.ml.vector_store import store_image_embedding
+                from app.ml.vector_store import store_content_embedding, store_image_embedding
                 from app.product.models import SafetyReport
                 from app.product.safety import classify
 
@@ -168,6 +168,7 @@ def process_pin(pin_id: str, request_id: str | None = None) -> str:
                 else:
                     pin.status = "ready"
                 store_image_embedding(db, pin, pixels, settings)
+                store_content_embedding(db, pin, pixels, settings)
                 db.commit()
                 logger.info(
                     json.dumps(

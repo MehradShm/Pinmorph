@@ -13,8 +13,8 @@ target_metadata = Base.metadata
 
 def include_object(obj, name, type_, reflected, compare_to):
     # Alembic cannot round-trip the cast/operator-class expression reliably.
-    # This one index is owned by the explicit migration and separately asserted in tests.
-    return not (type_ == "index" and name == "ix_lens_clip_hnsw")
+    # These fixed recipe indexes are explicitly migrated and separately asserted in tests.
+    return not (type_ == "index" and name in {"ix_lens_clip_hnsw", "ix_personalized_clip_hnsw"})
 
 
 def run_migrations_offline() -> None:
